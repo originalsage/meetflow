@@ -1,0 +1,161 @@
+<template>
+  <div class="reservations-container">
+    <el-card>
+      <template #header>
+        <div class="card-header">
+          <h2>我的预约</h2>
+          <el-select
+            v-model="statusFilter"
+            placeholder="筛选状态"
+            style="width: 200px"
+            clearable
+            @change="fetchReservations"
+          >
+            <el-option label="待审批" :value="0" />
+            <el-option label="已通过" :value="1" />
+            <el-option label="已驳回" :value="2" />
+            <el-option label="已取消" :value="3" />
+            <el-option label="已完成" :value="4" />
+          </el-select>
+        </div>
+      </template>
+      
+      <el-table
+        :data="reservations"
+        v-loading="loading"
+        style="width: 100%"
+      >
+        <el-table-column prop="id" label="ID" width="80" />
+        <el-table-column label="会议室" width="150">
+          <template #default="{ row }">
+            {{ row.meetingRoom?.name || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="meetingTitle" label="会议主题" min-width="150" />
+        <el-table-column label="预约日期" width="120">
+          <template #default="{ row }">
+            {{ row.reservationDate }}
+          </template>
+        </el-table-column>
+        <el-table-column label="时间段" width="180">
+          <template #default="{ row }">
+            {{ row.startTime }}:00 - {{ row.endTime }}:00
+          </template>
+        </el-table-column>
+        <el-table-column prop="attendeeCount" label="参会人数" width="100" />
+        <el-table-column label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag :type="getStatusType(row.status)">
+              {{ getStatusText(row.status) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="审批时间" width="180">
+          <template #default="{ row }">
+            {{ row.approvalTime || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="驳回理由" min-width="150">
+          <template #default="{ row }">
+            {{ row.rejectReason || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="120" fixed="right">
+          <template #default="{ row }">
+            <el-button
+              v-if="row.status === 1"
+              type="danger"
+              size="small"
+              @click="handleCancel(row.id)"
+            >
+              取消
+            </el-button>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+      </el-table>
+      
+      <el-empty v-if="!loading && reservations.length === 0" description="暂无预约记录" />
+    </el-card>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { getMyReservations, cancelReservation } from '@/api/reservation'
+
+const reservations = ref([])
+const loading = ref(false)
+const statusFilter = ref(null)
+
+const statusMap = {
+  0: { text: '待审批', type: 'warning' },
+  1: { text: '已通过', type: 'success' },
+  2: { text: '已驳回', type: 'danger' },
+  3: { text: '已取消', type: 'info' },
+  4: { text: '已完成', type: '' }
+}
+
+const getStatusText = (status) => {
+  return statusMap[status]?.text || '未知'
+}
+
+const getStatusType = (status) => {
+  return statusMap[status]?.type || ''
+}
+
+const fetchReservations = async () => {
+  loading.value = true
+  try {
+    const params = statusFilter.value !== null ? { status: statusFilter.value } : {}
+    const res = await getMyReservations(params)
+    reservations.value = res.data || []
+  } catch (error) {
+    console.error('获取预约记录失败:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+const handleCancel = async (id) => {
+  try {
+    await ElMessageBox.confirm('确定要取消该预约吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    
+    await cancelReservation(id)
+    ElMessage.success('取消成功')
+    fetchReservations()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('取消预约失败:', error)
+    }
+  }
+}
+
+onMounted(() => {
+  fetchReservations()
+})
+</script>
+
+<style scoped>
+.reservations-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-header h2 {
+  margin: 0;
+  color: #333;
+}
+</style>
+

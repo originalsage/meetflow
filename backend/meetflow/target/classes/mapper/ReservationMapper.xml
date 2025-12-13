@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lls.mapper.ReservationMapper">
+
+    <resultMap id="BaseResultMap" type="com.lls.entity.Reservation">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="meeting_room_id" property="meetingRoomId"/>
+        <result column="meeting_title" property="meetingTitle"/>
+        <result column="reservation_date" property="reservationDate"/>
+        <result column="start_time" property="startTime"/>
+        <result column="end_time" property="endTime"/>
+        <result column="attendee_count" property="attendeeCount"/>
+        <result column="status" property="status"/>
+        <result column="reject_reason" property="rejectReason"/>
+        <result column="approve_time" property="approveTime"/>
+        <result column="approver_id" property="approverId"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, user_id, meeting_room_id, meeting_title, reservation_date, start_time, end_time,
+        attendee_count, status, reject_reason, approve_time, approver_id, create_time, update_time
+    </sql>
+
+    <insert id="insert" parameterType="com.lls.entity.Reservation" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO reservation (user_id, meeting_room_id, meeting_title, reservation_date,
+                                start_time, end_time, attendee_count, status)
+        VALUES (#{userId}, #{meetingRoomId}, #{meetingTitle}, #{reservationDate},
+                #{startTime}, #{endTime}, #{attendeeCount}, #{status})
+    </insert>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM reservation
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectByUserId" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM reservation
+        WHERE user_id = #{userId}
+        <if test="status != null">
+            AND status = #{status}
+        </if>
+        ORDER BY reservation_date DESC, start_time DESC
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM reservation
+        <if test="status != null">
+            WHERE status = #{status}
+        </if>
+        ORDER BY reservation_date DESC, start_time DESC
+    </select>
+
+    <select id="selectByRoomAndTime" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM reservation
+        WHERE meeting_room_id = #{roomId}
+        AND reservation_date = #{date}
+        AND status IN (0, 1)
+        AND (
+            (start_time &lt; #{endTime} AND end_time > #{startTime})
+        )
+        <if test="excludeId != null">
+            AND id != #{excludeId}
+        </if>
+    </select>
+
+    <update id="update" parameterType="com.lls.entity.Reservation">
+        UPDATE reservation
+        <set>
+            <if test="meetingTitle != null">meeting_title = #{meetingTitle},</if>
+            <if test="reservationDate != null">reservation_date = #{reservationDate},</if>
+            <if test="startTime != null">start_time = #{startTime},</if>
+            <if test="endTime != null">end_time = #{endTime},</if>
+            <if test="attendeeCount != null">attendee_count = #{attendeeCount},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="rejectReason != null">reject_reason = #{rejectReason},</if>
+            <if test="approveTime != null">approve_time = #{approveTime},</if>
+            <if test="approverId != null">approver_id = #{approverId},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectWeeklySchedule" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM reservation
+        WHERE reservation_date >= #{weekStartDate}
+        AND reservation_date &lt; DATE_ADD(#{weekStartDate}, INTERVAL 7 DAY)
+        AND status IN (0, 1)
+        ORDER BY reservation_date ASC, start_time ASC
+    </select>
+
+    <select id="selectDailySchedule" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM reservation
+        WHERE reservation_date = #{date}
+        AND status IN (0, 1)
+        ORDER BY start_time ASC
+    </select>
+
+</mapper>
+

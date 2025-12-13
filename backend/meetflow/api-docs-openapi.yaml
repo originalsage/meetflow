@@ -1,0 +1,560 @@
+openapi: 3.0.3
+info:
+  title: 会议室预约系统 API
+  description: 会议室预约系统 RESTful API 文档
+  version: 1.0.0
+  contact:
+    name: API Support
+
+servers:
+  - url: http://localhost:8080/api
+    description: 本地开发环境
+
+tags:
+  - name: 认证
+    description: 用户认证相关接口
+  - name: 会议室
+    description: 会议室管理相关接口
+  - name: 预约
+    description: 预约管理相关接口
+
+paths:
+  /auth/login:
+    post:
+      tags:
+        - 认证
+      summary: 用户登录
+      description: 用户登录，返回JWT Token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  example: admin
+                password:
+                  type: string
+                  example: admin123
+                role:
+                  type: integer
+                  description: 0-普通用户，1-管理员
+                  example: 1
+      responses:
+        '200':
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '500':
+          description: 登录失败
+
+  /auth/info:
+    get:
+      tags:
+        - 认证
+      summary: 获取当前用户信息
+      description: 获取当前登录用户的信息
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserVO'
+
+  /meeting-rooms:
+    get:
+      tags:
+        - 会议室
+      summary: 获取所有会议室列表
+      description: 获取所有会议室信息
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MeetingRoomVO'
+
+    post:
+      tags:
+        - 会议室
+      summary: 添加会议室（管理员）
+      description: 管理员添加新会议室
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeetingRoomDTO'
+      responses:
+        '200':
+          description: 成功
+
+  /meeting-rooms/{id}:
+    get:
+      tags:
+        - 会议室
+      summary: 获取会议室详情
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 成功
+
+    put:
+      tags:
+        - 会议室
+      summary: 修改会议室（管理员）
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeetingRoomDTO'
+      responses:
+        '200':
+          description: 成功
+
+    delete:
+      tags:
+        - 会议室
+      summary: 删除会议室（管理员）
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 成功
+
+  /meeting-rooms/available:
+    get:
+      tags:
+        - 会议室
+      summary: 根据条件筛选可用会议室
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+            example: '2024-01-15'
+        - name: startTime
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 23
+            example: 9
+        - name: endTime
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 23
+            example: 11
+        - name: attendeeCount
+          in: query
+          schema:
+            type: integer
+            example: 20
+      responses:
+        '200':
+          description: 成功
+
+  /meeting-rooms/{id}/status:
+    put:
+      tags:
+        - 会议室
+      summary: 设置会议室状态（管理员）
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: status
+          in: query
+          required: true
+          schema:
+            type: integer
+            enum: [0, 1]
+            description: 0-不可预约，1-可预约
+      responses:
+        '200':
+          description: 成功
+
+  /meeting-rooms/upload:
+    post:
+      tags:
+        - 会议室
+      summary: 上传会议室照片（管理员）
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: 成功
+
+  /reservations:
+    post:
+      tags:
+        - 预约
+      summary: 创建预约
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationDTO'
+      responses:
+        '200':
+          description: 成功
+
+  /reservations/my:
+    get:
+      tags:
+        - 预约
+      summary: 查询我的预约记录
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: integer
+            enum: [0, 1, 2, 3, 4]
+            description: 0-待审批，1-已通过，2-已驳回，3-已取消，4-已完成
+      responses:
+        '200':
+          description: 成功
+
+  /reservations/{id}:
+    get:
+      tags:
+        - 预约
+      summary: 获取预约详情
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 成功
+
+  /reservations/{id}/cancel:
+    put:
+      tags:
+        - 预约
+      summary: 取消预约
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 成功
+
+  /reservations/all:
+    get:
+      tags:
+        - 预约
+      summary: 查询所有预约记录（管理员）
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: integer
+            enum: [0, 1, 2, 3, 4]
+      responses:
+        '200':
+          description: 成功
+
+  /reservations/{id}/approve:
+    put:
+      tags:
+        - 预约
+      summary: 审批预约（管理员）
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rejectReason:
+                  type: string
+                  description: 驳回理由，如果为空或不存在则通过
+      responses:
+        '200':
+          description: 成功
+
+  /reservations/weekly:
+    get:
+      tags:
+        - 预约
+      summary: 获取一周预约情况（管理员）
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: weekStartDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+            example: '2024-01-15'
+      responses:
+        '200':
+          description: 成功
+
+  /reservations/daily:
+    get:
+      tags:
+        - 预约
+      summary: 获取当天各时段占用情况（管理员）
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+            example: '2024-01-15'
+      responses:
+        '200':
+          description: 成功
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    LoginResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            token:
+              type: string
+            userInfo:
+              $ref: '#/components/schemas/UserVO'
+
+    UserVO:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        name:
+          type: string
+        role:
+          type: integer
+        phone:
+          type: string
+        email:
+          type: string
+        createTime:
+          type: string
+          format: date-time
+
+    MeetingRoomDTO:
+      type: object
+      properties:
+        name:
+          type: string
+          example: 中型会议室B
+        roomNumber:
+          type: string
+          example: B201
+        capacity:
+          type: integer
+          example: 20
+        area:
+          type: number
+          format: double
+          example: 50.00
+        purpose:
+          type: string
+          example: 适用于部门会议
+        photoUrl:
+          type: string
+        status:
+          type: integer
+          enum: [0, 1]
+          example: 1
+
+    MeetingRoomVO:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        roomNumber:
+          type: string
+        capacity:
+          type: integer
+        area:
+          type: number
+        purpose:
+          type: string
+        photoUrl:
+          type: string
+        status:
+          type: integer
+        createTime:
+          type: string
+          format: date-time
+
+    ReservationDTO:
+      type: object
+      required:
+        - meetingRoomId
+        - meetingTitle
+        - reservationDate
+        - startTime
+        - endTime
+        - attendeeCount
+      properties:
+        meetingRoomId:
+          type: integer
+          example: 1
+        meetingTitle:
+          type: string
+          example: 项目讨论会
+        reservationDate:
+          type: string
+          format: date
+          example: '2024-01-15'
+        startTime:
+          type: integer
+          minimum: 0
+          maximum: 23
+          example: 9
+        endTime:
+          type: integer
+          minimum: 0
+          maximum: 23
+          example: 11
+        attendeeCount:
+          type: integer
+          example: 15
+
+    ReservationVO:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        userName:
+          type: string
+        meetingRoomId:
+          type: integer
+        meetingRoomName:
+          type: string
+        roomNumber:
+          type: string
+        meetingTitle:
+          type: string
+        reservationDate:
+          type: string
+          format: date
+        startTime:
+          type: integer
+        endTime:
+          type: integer
+        attendeeCount:
+          type: integer
+        status:
+          type: integer
+        rejectReason:
+          type: string
+        approveTime:
+          type: string
+          format: date-time
+        approverId:
+          type: integer
+        approverName:
+          type: string
+        createTime:
+          type: string
+          format: date-time
+
