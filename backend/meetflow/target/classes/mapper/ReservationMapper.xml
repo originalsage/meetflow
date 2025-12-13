@@ -56,7 +56,7 @@
         <if test="status != null">
             WHERE status = #{status}
         </if>
-        ORDER BY reservation_date DESC, start_time DESC
+        ORDER BY create_time DESC
     </select>
 
     <select id="selectByRoomAndTime" resultMap="BaseResultMap">

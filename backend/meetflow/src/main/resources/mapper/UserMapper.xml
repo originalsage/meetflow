@@ -33,8 +33,8 @@
     </select>
 
     <insert id="insert" parameterType="com.lls.entity.User" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO user (username, password, name, role, phone, email)
-        VALUES (#{username}, #{password}, #{name}, #{role}, #{phone}, #{email})
+        INSERT INTO user (username, password, name, role, phone, email, create_time, update_time)
+        VALUES (#{username}, #{password}, #{name}, #{role}, #{phone}, #{email}, #{createTime}, #{updateTime})
     </insert>
 
     <update id="update" parameterType="com.lls.entity.User">
@@ -46,6 +46,7 @@
             <if test="role != null">role = #{role},</if>
             <if test="phone != null">phone = #{phone},</if>
             <if test="email != null">email = #{email},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
         </set>
         WHERE id = #{id}
     </update>

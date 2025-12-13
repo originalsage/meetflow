@@ -28,6 +28,7 @@
             placeholder="请输入密码"
             size="large"
             :prefix-icon="Lock"
+            show-password
             @keyup.enter="handleLogin"
           />
         </el-form-item>
@@ -47,6 +48,12 @@
           >
             登录
           </el-button>
+        </el-form-item>
+        <el-form-item>
+          <div class="register-link">
+            <span>还没有账号？</span>
+            <el-link type="primary" @click="goToRegister">立即注册</el-link>
+          </div>
         </el-form-item>
       </el-form>
     </div>
@@ -106,6 +113,10 @@ const handleLogin = async () => {
     }
   })
 }
+
+const goToRegister = () => {
+  router.push('/register')
+}
 </script>
 
 <style scoped>
@@ -157,10 +168,52 @@ const handleLogin = async () => {
   margin-bottom: 22px;
 }
 
+:deep(.el-input__wrapper) {
+  background-color: #fff;
+  box-shadow: 0 0 0 1px #dcdfe6 inset;
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  background-color: #fff;
+  box-shadow: 0 0 0 1px #409eff inset;
+}
+
+:deep(.el-input__inner) {
+  background-color: transparent;
+}
+
 :deep(.el-radio-group) {
   width: 100%;
   display: flex;
   justify-content: space-around;
+}
+
+:deep(.el-radio) {
+  margin-right: 0;
+}
+
+:deep(.el-radio__input.is-checked .el-radio__inner) {
+  background-color: transparent;
+  border-color: #409eff;
+}
+
+:deep(.el-radio__input.is-checked .el-radio__inner::after) {
+  background-color: #409eff;
+}
+
+:deep(.el-radio__inner:hover) {
+  border-color: #409eff;
+}
+
+.register-link {
+  width: 100%;
+  text-align: center;
+  font-size: 14px;
+  color: #666;
+}
+
+.register-link span {
+  margin-right: 5px;
 }
 </style>
 

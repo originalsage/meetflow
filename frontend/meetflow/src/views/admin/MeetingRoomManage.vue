@@ -16,7 +16,6 @@
         v-loading="loading"
         style="width: 100%"
       >
-        <el-table-column prop="id" label="ID" width="80" />
         <el-table-column label="照片" width="100">
           <template #default="{ row }">
             <el-image
@@ -74,6 +73,7 @@
         :model="form"
         :rules="rules"
         label-width="100px"
+        class="meeting-room-form"
       >
         <el-form-item label="名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入会议室名称" />
@@ -338,6 +338,18 @@ onMounted(() => {
 .card-header h2 {
   margin: 0;
   color: #333;
+}
+
+.meeting-room-form {
+  padding: 10px 0;
+}
+
+.meeting-room-form :deep(.el-form-item) {
+  margin-bottom: 22px;
+}
+
+.meeting-room-form :deep(.el-form-item:last-child) {
+  margin-bottom: 0;
 }
 </style>
 

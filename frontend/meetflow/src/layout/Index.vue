@@ -13,6 +13,7 @@
           </span>
           <template #dropdown>
             <el-dropdown-menu>
+              <el-dropdown-item v-if="!userStore.isAdmin()" command="edit">修改信息</el-dropdown-item>
               <el-dropdown-item command="logout">退出登录</el-dropdown-item>
             </el-dropdown-menu>
           </template>
@@ -63,11 +64,17 @@
         <router-view />
       </el-main>
     </el-container>
+    <!-- 用户信息编辑对话框 -->
+    <UserInfoDialog
+      v-model:visible="userInfoDialogVisible"
+      :user-info="userStore.userInfo"
+      @success="handleUserInfoUpdateSuccess"
+    />
   </el-container>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
@@ -82,19 +89,28 @@ import {
   Grid,
   Clock
 } from '@element-plus/icons-vue'
+import UserInfoDialog from '@/components/UserInfoDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const userInfoDialogVisible = ref(false)
 
 const activeMenu = computed(() => route.path)
 
 const handleCommand = (command) => {
-  if (command === 'logout') {
+  if (command === 'edit') {
+    userInfoDialogVisible.value = true
+  } else if (command === 'logout') {
     userStore.logout()
     ElMessage.success('已退出登录')
     router.push('/login')
   }
+}
+
+const handleUserInfoUpdateSuccess = () => {
+  // 用户信息更新成功后的回调
+  // userStore中的updateUser已经更新了userInfo，这里不需要额外操作
 }
 </script>
 

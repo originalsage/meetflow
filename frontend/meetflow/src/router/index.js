@@ -10,6 +10,12 @@ const routes = [
     meta: { title: '登录' }
   },
   {
+    path: '/register',
+    name: 'Register',
+    component: () => import('@/views/Register.vue'),
+    meta: { title: '注册' }
+  },
+  {
     path: '/',
     component: () => import('@/layout/Index.vue'),
     redirect: '/meeting-rooms',
@@ -76,14 +82,14 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const userStore = useUserStore()
   
-  // 如果访问登录页且已登录，跳转到首页
-  if (to.path === '/login' && userStore.token) {
+  // 如果访问登录页或注册页且已登录，跳转到首页
+  if ((to.path === '/login' || to.path === '/register') && userStore.token) {
     next('/')
     return
   }
   
   // 如果访问需要登录的页面且未登录，跳转到登录页
-  if (to.path !== '/login' && !userStore.token) {
+  if (to.path !== '/login' && to.path !== '/register' && !userStore.token) {
     next('/login')
     return
   }
