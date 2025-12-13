@@ -40,8 +40,17 @@ public class ReservationServiceImpl implements ReservationService {
         }
 
         // 验证日期不能是过去
-        if (reservationDTO.getReservationDate().isBefore(LocalDate.now())) {
+        LocalDate today = LocalDate.now();
+        if (reservationDTO.getReservationDate().isBefore(today)) {
             throw new RuntimeException("不能预约过去的日期");
+        }
+        
+        // 如果是今天，检查时间段是否已过
+        if (reservationDTO.getReservationDate().equals(today)) {
+            int currentHour = LocalDateTime.now().getHour();
+            if (reservationDTO.getStartTime() <= currentHour) {
+                throw new RuntimeException("不能预约已过去的时间段");
+            }
         }
 
         // 查询会议室
@@ -145,6 +154,34 @@ public class ReservationServiceImpl implements ReservationService {
             throw new RuntimeException(ResultCode.RESERVATION_STATUS_INVALID.getMessage());
         }
 
+        // 审批时再次验证会议室状态和容量
+        MeetingRoom meetingRoom = meetingRoomMapper.selectById(reservation.getMeetingRoomId());
+        if (meetingRoom == null) {
+            throw new RuntimeException(ResultCode.MEETING_ROOM_NOT_FOUND.getMessage());
+        }
+
+        // 检查会议室是否可预约
+        if (meetingRoom.getStatus() == 0) {
+            throw new RuntimeException(ResultCode.MEETING_ROOM_NOT_AVAILABLE.getMessage());
+        }
+
+        // 检查容量是否足够
+        if (meetingRoom.getCapacity() < reservation.getAttendeeCount()) {
+            throw new RuntimeException(ResultCode.MEETING_ROOM_CAPACITY_INSUFFICIENT.getMessage());
+        }
+
+        // 审批时再次检查时间冲突（排除当前预约本身）
+        List<Reservation> conflicts = reservationMapper.selectByRoomAndTime(
+                reservation.getMeetingRoomId(),
+                reservation.getReservationDate(),
+                reservation.getStartTime(),
+                reservation.getEndTime(),
+                reservation.getId() // 排除当前预约
+        );
+        if (!conflicts.isEmpty()) {
+            throw new RuntimeException(ResultCode.RESERVATION_TIME_CONFLICT.getMessage());
+        }
+
         reservation.setStatus(1); // 已通过
         reservation.setApproveTime(LocalDateTime.now());
         reservation.setApproverId(approverId);
@@ -204,6 +241,10 @@ public class ReservationServiceImpl implements ReservationService {
         if (meetingRoom != null) {
             vo.setMeetingRoomName(meetingRoom.getName());
             vo.setRoomNumber(meetingRoom.getRoomNumber());
+        } else {
+            // 如果会议室已被删除，显示提示信息
+            vo.setMeetingRoomName("会议室已删除");
+            vo.setRoomNumber("-");
         }
 
         // 查询审批人信息

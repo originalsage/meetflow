@@ -75,6 +75,7 @@
               :xs="24"
               :sm="12"
               :md="8"
+              :lg="6"
             >
               <el-card
                 class="room-select-card"
@@ -82,10 +83,40 @@
                 shadow="hover"
                 @click="selectRoom(room)"
               >
-                <h3>{{ room.name }}</h3>
-                <p>房号：{{ room.roomNumber }}</p>
-                <p>容量：{{ room.capacity }}人</p>
-                <p>面积：{{ room.area }}㎡</p>
+                <div class="room-image-wrapper">
+                  <div class="room-image">
+                    <img
+                      v-if="room.photoUrl"
+                      :src="room.photoUrl"
+                      class="room-photo"
+                      alt="会议室图片"
+                    />
+                    <div v-else class="no-image">
+                      <el-icon :size="50"><Picture /></el-icon>
+                      <p>暂无图片</p>
+                    </div>
+                  </div>
+                  <div v-if="selectedRoom?.id === room.id" class="selected-badge">
+                    <el-icon><Check /></el-icon>
+                  </div>
+                </div>
+                <div class="room-info">
+                  <h3 class="room-name">{{ room.name }}</h3>
+                  <p class="room-number">
+                    <el-icon><Location /></el-icon>
+                    <span>{{ room.roomNumber }}</span>
+                  </p>
+                  <div class="room-details">
+                    <div class="detail-item">
+                      <el-icon><User /></el-icon>
+                      <span>{{ room.capacity }}人</span>
+                    </div>
+                    <div class="detail-item">
+                      <el-icon><House /></el-icon>
+                      <span>{{ room.area }}㎡</span>
+                    </div>
+                  </div>
+                </div>
               </el-card>
             </el-col>
           </el-row>
@@ -144,6 +175,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { Picture, Check, Location, User, House } from '@element-plus/icons-vue'
 import { getAvailableMeetingRooms } from '@/api/meetingRoom'
 import { createReservation } from '@/api/reservation'
 import dayjs from 'dayjs'
@@ -221,6 +253,7 @@ const searchRooms = async () => {
           currentStep.value = 1
         }
       } catch (error) {
+        // 错误已在request拦截器中处理，这里不需要额外处理
         console.error('查找会议室失败:', error)
       } finally {
         searching.value = false
@@ -251,6 +284,7 @@ const submitReservation = async () => {
         ElMessage.success('预约提交成功，等待审批')
         router.push('/my-reservations')
       } catch (error) {
+        // 错误已在request拦截器中处理，这里不需要额外处理
         console.error('提交预约失败:', error)
       } finally {
         submitting.value = false
@@ -283,28 +317,153 @@ onMounted(() => {
 .room-select-card {
   margin-bottom: 20px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+  overflow: hidden;
 }
 
 .room-select-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(64, 158, 255, 0.2);
+  border-color: #c6e2ff;
 }
 
 .room-select-card.selected {
   border: 2px solid #409eff;
-  background-color: #ecf5ff;
+  background: linear-gradient(to bottom, #ecf5ff 0%, #ffffff 15%);
+  box-shadow: 0 4px 16px rgba(64, 158, 255, 0.3);
 }
 
-.room-select-card h3 {
-  margin: 0 0 10px 0;
-  color: #333;
+.room-image-wrapper {
+  position: relative;
+  width: 100%;
+  margin-bottom: 15px;
+  border-radius: 4px;
+  overflow: hidden;
 }
 
-.room-select-card p {
-  margin: 5px 0;
-  color: #666;
+.room-image {
+  width: 100%;
+  height: 220px;
+  overflow: hidden;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+}
+
+.room-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+  pointer-events: none;
+  user-select: none;
+}
+
+.room-select-card:hover .room-photo {
+  transform: scale(1.05);
+}
+
+.no-image {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #c0c4cc;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+}
+
+.no-image p {
+  margin-top: 10px;
   font-size: 14px;
+  color: #909399;
+}
+
+.selected-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #409eff 0%, #67c23a 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 18px;
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.4);
+  animation: scaleIn 0.3s ease;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.room-info {
+  padding: 0 5px;
+}
+
+.room-name {
+  margin: 0 0 12px 0;
+  color: #303133;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.room-number {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 12px 0;
+  color: #606266;
+  font-size: 14px;
+}
+
+.room-number .el-icon {
+  color: #909399;
+  font-size: 16px;
+}
+
+.room-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #ebeef5;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #606266;
+  font-size: 14px;
+}
+
+.detail-item .el-icon {
+  color: #909399;
+  font-size: 16px;
+}
+
+.room-select-card.selected .room-name {
+  color: #409eff;
+}
+
+.room-select-card.selected .detail-item {
+  color: #409eff;
+}
+
+.room-select-card.selected .detail-item .el-icon {
+  color: #66b1ff;
 }
 
 .step-actions {

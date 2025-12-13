@@ -3,7 +3,9 @@
     <div class="login-box">
       <div class="login-header">
         <h1>会议室预约系统</h1>
-        <p>Meeting Room Reservation System</p>
+        <p v-if="loginForm.role === 0">预约用户登录</p>
+        <p v-else-if="loginForm.role === 1">管理员登录</p>
+        <p v-else>Meeting Room Reservation System</p>
       </div>
       <el-form
         ref="loginFormRef"

@@ -25,10 +25,16 @@
         v-loading="loading"
         style="width: 100%"
       >
-        <el-table-column prop="id" label="ID" width="80" />
         <el-table-column label="会议室" width="150">
           <template #default="{ row }">
-            {{ getMeetingRoomName(row) }}
+            <el-link
+              type="primary"
+              :underline="false"
+              @click="goToRoomDetail(row)"
+              style="cursor: pointer"
+            >
+              {{ getMeetingRoomName(row) }}
+            </el-link>
           </template>
         </el-table-column>
         <el-table-column prop="meetingTitle" label="会议主题" min-width="150" />
@@ -55,9 +61,14 @@
             </el-tag>
           </template>
         </el-table-column>
+        <el-table-column label="申请时间" width="180">
+          <template #default="{ row }">
+            {{ formatDateTime(row.createTime) }}
+          </template>
+        </el-table-column>
         <el-table-column label="审批时间" width="180">
           <template #default="{ row }">
-            {{ row.approvalTime || '-' }}
+            {{ formatDateTime(row.approveTime || row.approvalTime) }}
           </template>
         </el-table-column>
         <el-table-column label="驳回理由" min-width="150">
@@ -126,9 +137,18 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getAllReservations, approveReservation } from '@/api/reservation'
 import { getMeetingRooms } from '@/api/meetingRoom'
+import dayjs from 'dayjs'
+
+const router = useRouter()
+
+const formatDateTime = (dateTime) => {
+  if (!dateTime) return '-'
+  return dayjs(dateTime).format('YYYY-MM-DD HH:mm:ss')
+}
 
 const reservations = ref([])
 const meetingRooms = ref([])
@@ -210,6 +230,23 @@ const getMeetingRoomName = (row) => {
   }
   
   return '-'
+}
+
+// 获取会议室ID
+const getMeetingRoomId = (row) => {
+  if (!row) return null
+  
+  return row.meetingRoomId || row.roomId || (row.meetingRoom?.id) || null
+}
+
+// 跳转到会议室详情
+const goToRoomDetail = (row) => {
+  const roomId = getMeetingRoomId(row)
+  if (roomId) {
+    router.push(`/meeting-rooms/${roomId}`)
+  } else {
+    ElMessage.warning('无法获取会议室ID')
+  }
 }
 
 // 获取用户名（兼容多种数据结构）

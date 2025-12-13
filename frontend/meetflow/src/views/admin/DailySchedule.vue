@@ -3,7 +3,10 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <h2>当天占用情况</h2>
+          <div class="header-title">
+            <el-icon class="title-icon"><Clock /></el-icon>
+            <h2>当天占用情况</h2>
+          </div>
           <div class="header-controls">
             <el-date-picker
               v-model="selectedDate"
@@ -13,10 +16,13 @@
               value-format="YYYY-MM-DD"
               @change="fetchDailyData"
               style="margin-right: 10px"
+              size="default"
             />
-            <el-button @click="prevDay">前一天</el-button>
-            <el-button @click="nextDay">后一天</el-button>
-            <el-button @click="today">今天</el-button>
+            <el-button-group>
+              <el-button :icon="ArrowLeft" @click="prevDay">前一天</el-button>
+              <el-button @click="today" type="primary">今天</el-button>
+              <el-button :icon="ArrowRight" @click="nextDay">后一天</el-button>
+            </el-button-group>
           </div>
         </div>
       </template>
@@ -31,6 +37,7 @@
                   v-for="hour in hours"
                   :key="hour"
                   class="hour-header"
+                  :class="{ 'current-hour': isCurrentHour(hour) }"
                 >
                   {{ hour }}:00
                 </th>
@@ -69,9 +76,6 @@
                       <div class="reservation-user">
                         {{ getUserName(getReservationAtHour(room.id, hour)) }}
                       </div>
-                      <div class="reservation-status">
-                        {{ getStatusText(getReservationAtHour(room.id, hour).status) }}
-                      </div>
                     </div>
                     <div
                       v-else
@@ -98,14 +102,6 @@
               <span class="legend-color"></span>
               <span>已通过</span>
             </div>
-            <div class="legend-item status-rejected">
-              <span class="legend-color"></span>
-              <span>已驳回</span>
-            </div>
-            <div class="legend-item status-cancelled">
-              <span class="legend-color"></span>
-              <span>已取消</span>
-            </div>
             <div class="legend-item status-completed">
               <span class="legend-color"></span>
               <span>已完成</span>
@@ -121,6 +117,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { getDailyReservations } from '@/api/reservation'
 import { getMeetingRooms } from '@/api/meetingRoom'
+import { Clock, ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 
 const loading = ref(false)
@@ -198,6 +195,13 @@ const getStatusText = (status) => {
   return statusMap[status] || '未知'
 }
 
+// 检查是否是当前小时
+const isCurrentHour = (hour) => {
+  const today = dayjs()
+  const selected = dayjs(selectedDate.value)
+  return selected.isSame(today, 'day') && hour === today.hour()
+}
+
 const fetchDailyData = async () => {
   loading.value = true
   try {
@@ -251,12 +255,25 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
+  gap: 15px;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
   gap: 10px;
+}
+
+.title-icon {
+  font-size: 24px;
+  color: #818cf8;
 }
 
 .card-header h2 {
   margin: 0;
   color: #333;
+  font-size: 20px;
+  font-weight: 600;
 }
 
 .header-controls {
@@ -274,7 +291,8 @@ onMounted(() => {
 .schedule-table-wrapper {
   overflow-x: auto;
   border: 1px solid #e4e7ed;
-  border-radius: 4px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 }
 
 .schedule-table {
@@ -293,60 +311,89 @@ onMounted(() => {
 }
 
 .schedule-table thead {
-  background: #f5f7fa;
+  background: linear-gradient(135deg, #a5b4fc 0%, #c4b5fd 100%);
+  color: white;
 }
 
 .room-header {
-  width: 150px;
+  width: 160px;
   text-align: center;
   font-weight: 600;
-  background: #fafafa;
+  background: linear-gradient(135deg, #a5b4fc 0%, #c4b5fd 100%);
+  color: white;
   position: sticky;
   left: 0;
   z-index: 10;
-  padding: 12px 8px;
+  padding: 16px 12px;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
 }
 
 .hour-header {
   min-width: 100px;
   text-align: center;
   font-weight: 600;
-  background: #fafafa;
+  background: linear-gradient(135deg, #a5b4fc 0%, #c4b5fd 100%);
+  color: white;
   padding: 12px 8px;
   font-size: 13px;
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s;
+}
+
+.hour-header.current-hour {
+  background: linear-gradient(135deg, #fca5a5 0%, #f87171 100%);
+  box-shadow: 0 2px 8px rgba(248, 113, 113, 0.2);
+  font-weight: 700;
 }
 
 .room-name-cell {
-  background: #fafafa;
+  background: #f8f9fa;
   position: sticky;
   left: 0;
   z-index: 5;
   text-align: center;
   padding: 12px 8px;
+  border-right: 2px solid #e4e7ed;
+  transition: all 0.3s;
+}
+
+.room-name-cell:hover {
+  background: #f0f2f5;
 }
 
 .room-name {
   font-weight: 600;
   color: #333;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   font-size: 14px;
 }
 
 .room-number {
   font-size: 12px;
-  color: #999;
+  color: #818cf8;
+  font-weight: 500;
+  padding: 2px 8px;
+  background: rgba(129, 140, 248, 0.1);
+  border-radius: 12px;
+  display: inline-block;
 }
 
 .hour-cell {
   min-width: 100px;
-  height: 80px;
+  height: 90px;
   padding: 2px;
   background: white;
   position: relative;
+  border-right: 1px solid #f0f0f0;
+  transition: all 0.2s;
 }
 
 .hour-cell.has-reservation {
-  background: #f9f9f9;
+  background: #fafafa;
+}
+
+.hour-cell:hover {
+  background: #f5f5f5;
 }
 
 .empty-hint {
@@ -364,13 +411,14 @@ onMounted(() => {
   left: 2px;
   top: 2px;
   bottom: 2px;
-  padding: 6px;
-  border-radius: 4px;
+  padding: 8px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border-left: 4px solid;
   z-index: 1;
   overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -395,14 +443,14 @@ onMounted(() => {
 .reservation-time {
   font-weight: 600;
   font-size: 11px;
-  color: #333;
+  color: #4b5563;
   margin-bottom: 3px;
   white-space: nowrap;
 }
 
 .reservation-title {
   font-size: 12px;
-  color: #333;
+  color: #4b5563;
   font-weight: 500;
   margin-bottom: 2px;
   overflow: hidden;
@@ -413,53 +461,52 @@ onMounted(() => {
 
 .reservation-user {
   font-size: 10px;
-  color: #666;
-  margin-bottom: 2px;
+  color: #6b7280;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.reservation-status {
-  font-size: 9px;
-  color: #999;
-  margin-top: 2px;
-}
-
 .status-pending {
-  background-color: #fff7e6;
-  border-left-color: #faad14;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-left-color: #f59e0b;
+  color: #78350f;
 }
 
 .status-approved {
-  background-color: #f6ffed;
-  border-left-color: #52c41a;
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  border-left-color: #10b981;
+  color: #064e3b;
 }
 
 .status-rejected {
-  background-color: #fff2f0;
-  border-left-color: #ff4d4f;
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  border-left-color: #ef4444;
+  color: #7f1d1d;
 }
 
 .status-cancelled {
-  background-color: #f5f5f5;
+  background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
   border-left-color: #d9d9d9;
+  color: #737373;
 }
 
 .status-completed {
-  background-color: #e6f7ff;
-  border-left-color: #1890ff;
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border-left-color: #3b82f6;
+  color: #1e3a8a;
 }
 
 .legend {
-  margin-top: 20px;
-  padding: 15px;
-  background: #f9f9f9;
-  border-radius: 4px;
+  margin-top: 24px;
+  padding: 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 8px;
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 20px;
   flex-wrap: wrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .legend-title {
@@ -489,13 +536,13 @@ onMounted(() => {
 }
 
 .legend-item.status-pending .legend-color {
-  background-color: #fff7e6;
-  border-left-color: #faad14;
+  background-color: #fef3c7;
+  border-left-color: #f59e0b;
 }
 
 .legend-item.status-approved .legend-color {
-  background-color: #f6ffed;
-  border-left-color: #52c41a;
+  background-color: #d1fae5;
+  border-left-color: #10b981;
 }
 
 .legend-item.status-rejected .legend-color {
@@ -509,7 +556,7 @@ onMounted(() => {
 }
 
 .legend-item.status-completed .legend-color {
-  background-color: #e6f7ff;
-  border-left-color: #1890ff;
+  background-color: #dbeafe;
+  border-left-color: #3b82f6;
 }
 </style>

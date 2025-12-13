@@ -28,7 +28,7 @@
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column label="会议室" width="150">
           <template #default="{ row }">
-            {{ row.meetingRoom?.name || '-' }}
+            {{ row.meetingRoomName || row.meetingRoom?.name || '-' }}
           </template>
         </el-table-column>
         <el-table-column prop="meetingTitle" label="会议主题" min-width="150" />
@@ -52,7 +52,7 @@
         </el-table-column>
         <el-table-column label="审批时间" width="180">
           <template #default="{ row }">
-            {{ row.approvalTime || '-' }}
+            {{ formatDateTime(row.approveTime || row.approvalTime) }}
           </template>
         </el-table-column>
         <el-table-column label="驳回理由" min-width="150">
@@ -84,10 +84,16 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getMyReservations, cancelReservation } from '@/api/reservation'
+import dayjs from 'dayjs'
 
 const reservations = ref([])
 const loading = ref(false)
 const statusFilter = ref(null)
+
+const formatDateTime = (dateTime) => {
+  if (!dateTime) return '-'
+  return dayjs(dateTime).format('YYYY-MM-DD HH:mm:ss')
+}
 
 const statusMap = {
   0: { text: '待审批', type: 'warning' },
