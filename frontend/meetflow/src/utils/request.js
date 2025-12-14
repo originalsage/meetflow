@@ -3,8 +3,12 @@ import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 
 // 创建axios实例
+// 优先使用环境变量，如果没有则使用相对路径（通过Vite代理）
+// 如果在生产环境或需要直接指定后端地址，可以通过环境变量 VITE_API_BASE_URL 配置
+const apiBaseURL = import.meta.env.VITE_API_BASE_URL || '/api'
+
 const service = axios.create({
-  baseURL: 'http://localhost:8080/api',
+  baseURL: apiBaseURL,
   timeout: 10000
 })
 
