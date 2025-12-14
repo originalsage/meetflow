@@ -46,7 +46,9 @@ service.interceptors.response.use(
   },
   error => {
     console.error('响应错误:', error)
-    ElMessage.error(error.message || '网络错误')
+    // 尝试从响应中获取错误消息
+    const errorMessage = error.response?.data?.message || error.message || '网络错误'
+    ElMessage.error(errorMessage)
     return Promise.reject(error)
   }
 )

@@ -13,7 +13,8 @@
           </span>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item v-if="!userStore.isAdmin()" command="edit">修改信息</el-dropdown-item>
+              <el-dropdown-item command="edit">修改信息</el-dropdown-item>
+              <el-dropdown-item command="changePassword">修改密码</el-dropdown-item>
               <el-dropdown-item command="logout">退出登录</el-dropdown-item>
             </el-dropdown-menu>
           </template>
@@ -39,6 +40,10 @@
             <el-icon><Document /></el-icon>
             <span>我的预约</span>
           </el-menu-item>
+          <el-menu-item index="/current-usage">
+            <el-icon><Clock /></el-icon>
+            <span>使用状态</span>
+          </el-menu-item>
           <el-divider v-if="userStore.isAdmin()" />
           <template v-if="userStore.isAdmin()">
             <el-menu-item index="/admin/meeting-rooms">
@@ -58,6 +63,13 @@
               <span>当天占用情况</span>
             </el-menu-item>
           </template>
+          <el-divider v-if="userStore.isSuperAdmin()" />
+          <template v-if="userStore.isSuperAdmin()">
+            <el-menu-item index="/admin/users">
+              <el-icon><UserFilled /></el-icon>
+              <span>用户管理</span>
+            </el-menu-item>
+          </template>
         </el-menu>
       </el-aside>
       <el-main class="main">
@@ -69,6 +81,11 @@
       v-model:visible="userInfoDialogVisible"
       :user-info="userStore.userInfo"
       @success="handleUserInfoUpdateSuccess"
+    />
+    <!-- 修改密码对话框 -->
+    <ChangePasswordDialog
+      v-model:visible="changePasswordDialogVisible"
+      @success="handlePasswordChangeSuccess"
     />
   </el-container>
 </template>
@@ -87,20 +104,25 @@ import {
   Setting,
   List,
   Grid,
-  Clock
+  Clock,
+  UserFilled
 } from '@element-plus/icons-vue'
 import UserInfoDialog from '@/components/UserInfoDialog.vue'
+import ChangePasswordDialog from '@/components/ChangePasswordDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 const userInfoDialogVisible = ref(false)
+const changePasswordDialogVisible = ref(false)
 
 const activeMenu = computed(() => route.path)
 
 const handleCommand = (command) => {
   if (command === 'edit') {
     userInfoDialogVisible.value = true
+  } else if (command === 'changePassword') {
+    changePasswordDialogVisible.value = true
   } else if (command === 'logout') {
     userStore.logout()
     ElMessage.success('已退出登录')
@@ -110,6 +132,11 @@ const handleCommand = (command) => {
 
 const handleUserInfoUpdateSuccess = () => {
   // 用户信息更新成功后的回调
+  // userStore中的updateUser已经更新了userInfo，这里不需要额外操作
+}
+
+const handlePasswordChangeSuccess = () => {
+  // 密码修改成功后的回调
   // userStore中的updateUser已经更新了userInfo，这里不需要额外操作
 }
 </script>

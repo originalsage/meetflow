@@ -121,12 +121,12 @@ public class MeetingRoomController {
     }
 
     /**
-     * 检查是否为管理员
+     * 检查是否为管理员（包括普通管理员和超级管理员）
      */
     private void checkAdmin(HttpServletRequest request) {
         String token = getTokenFromRequest(request);
         Integer role = jwtUtil.getRoleFromToken(token);
-        if (role == null || role != 1) {
+        if (role == null || (role != 1 && role != 2)) {
             throw new RuntimeException("无权限访问");
         }
     }

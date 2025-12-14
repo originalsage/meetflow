@@ -55,5 +55,10 @@ public interface ReservationService {
      * 获取当天各时段占用情况
      */
     List<ReservationVO> getDailySchedule(LocalDate date);
+
+    /**
+     * 获取用户当前会议室使用状态
+     */
+    com.lls.vo.CurrentUsageVO getCurrentUsage(Long userId);
 }
 

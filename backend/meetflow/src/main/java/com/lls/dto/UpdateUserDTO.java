@@ -18,5 +18,21 @@ public class UpdateUserDTO {
 
     @Email(message = "邮箱格式不正确")
     private String email;
+
+    /**
+     * 旧密码（修改密码时需要）
+     */
+    private String oldPassword;
+
+    /**
+     * 新密码（修改密码时需要）
+     */
+    @Pattern(regexp = "^.{6,20}$", message = "密码长度必须在6-20位之间")
+    private String newPassword;
+
+    /**
+     * 确认新密码（修改密码时需要）
+     */
+    private String confirmPassword;
 }
 

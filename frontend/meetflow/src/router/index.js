@@ -44,6 +44,12 @@ const routes = [
         component: () => import('@/views/MyReservations.vue'),
         meta: { title: '我的预约' }
       },
+      {
+        path: 'current-usage',
+        name: 'CurrentUsage',
+        component: () => import('@/views/CurrentUsage.vue'),
+        meta: { title: '会议室使用状态' }
+      },
       // 管理员路由
       {
         path: 'admin/meeting-rooms',
@@ -68,6 +74,12 @@ const routes = [
         name: 'DailySchedule',
         component: () => import('@/views/admin/DailySchedule.vue'),
         meta: { title: '当天占用情况', requiresAdmin: true }
+      },
+      {
+        path: 'admin/users',
+        name: 'UserManage',
+        component: () => import('@/views/admin/UserManage.vue'),
+        meta: { title: '用户管理', requiresSuperAdmin: true }
       }
     ]
   }
@@ -96,6 +108,13 @@ router.beforeEach((to, from, next) => {
   
   // 如果访问需要管理员权限的页面
   if (to.meta.requiresAdmin && !userStore.isAdmin()) {
+    ElMessage.error('无权限访问')
+    next('/')
+    return
+  }
+  
+  // 如果访问需要超级管理员权限的页面
+  if (to.meta.requiresSuperAdmin && !userStore.isSuperAdmin()) {
     ElMessage.error('无权限访问')
     next('/')
     return

@@ -66,9 +66,14 @@ export const useUserStore = defineStore('user', () => {
     localStorage.removeItem('userInfo')
   }
 
-  // 是否为管理员
+  // 是否为管理员（包括普通管理员和超级管理员）
   const isAdmin = () => {
-    return userInfo.value?.role === 1
+    return userInfo.value?.role === 1 || userInfo.value?.role === 2
+  }
+
+  // 是否为超级管理员
+  const isSuperAdmin = () => {
+    return userInfo.value?.role === 2
   }
 
   return {
@@ -79,7 +84,8 @@ export const useUserStore = defineStore('user', () => {
     getUserInfo,
     updateUser,
     logout,
-    isAdmin
+    isAdmin,
+    isSuperAdmin
   }
 })
 

@@ -124,12 +124,22 @@ public class ReservationController {
     }
 
     /**
-     * 检查是否为管理员
+     * 获取用户当前会议室使用状态
+     */
+    @GetMapping("/current-usage")
+    public Result<com.lls.vo.CurrentUsageVO> getCurrentUsage(HttpServletRequest request) {
+        Long userId = getUserIdFromRequest(request);
+        com.lls.vo.CurrentUsageVO usage = reservationService.getCurrentUsage(userId);
+        return Result.success(usage);
+    }
+
+    /**
+     * 检查是否为管理员（包括普通管理员和超级管理员）
      */
     private void checkAdmin(HttpServletRequest request) {
         String token = getTokenFromRequest(request);
         Integer role = jwtUtil.getRoleFromToken(token);
-        if (role == null || role != 1) {
+        if (role == null || (role != 1 && role != 2)) {
             throw new RuntimeException("无权限访问");
         }
     }

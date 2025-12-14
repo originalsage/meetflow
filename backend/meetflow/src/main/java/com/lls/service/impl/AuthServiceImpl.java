@@ -69,8 +69,13 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // 验证角色（如果指定了角色）
-        if (loginDTO.getRole() != null && !user.getRole().equals(loginDTO.getRole())) {
-            throw new RuntimeException("角色不匹配");
+        // 超级管理员（role=2）可以以管理员身份（role=1）登录
+        if (loginDTO.getRole() != null) {
+            if (user.getRole() == 2 && loginDTO.getRole() == 1) {
+                // 超级管理员可以以管理员身份登录
+            } else if (!user.getRole().equals(loginDTO.getRole())) {
+                throw new RuntimeException("角色不匹配");
+            }
         }
 
         // 生成Token
@@ -126,6 +131,41 @@ public class AuthServiceImpl implements AuthService {
         user.setPhone(updateUserDTO.getPhone());
         user.setEmail(updateUserDTO.getEmail());
         user.setUpdateTime(LocalDateTime.now());
+
+        // 如果提供了密码相关字段，则更新密码
+        if (updateUserDTO.getOldPassword() != null && !updateUserDTO.getOldPassword().isEmpty() ||
+            updateUserDTO.getNewPassword() != null && !updateUserDTO.getNewPassword().isEmpty() ||
+            updateUserDTO.getConfirmPassword() != null && !updateUserDTO.getConfirmPassword().isEmpty()) {
+            
+            // 验证所有密码字段都必须提供
+            if (updateUserDTO.getOldPassword() == null || updateUserDTO.getOldPassword().isEmpty()) {
+                throw new RuntimeException("请输入旧密码");
+            }
+            if (updateUserDTO.getNewPassword() == null || updateUserDTO.getNewPassword().isEmpty()) {
+                throw new RuntimeException("请输入新密码");
+            }
+            if (updateUserDTO.getConfirmPassword() == null || updateUserDTO.getConfirmPassword().isEmpty()) {
+                throw new RuntimeException("请确认新密码");
+            }
+
+            // 验证旧密码是否正确
+            if (!passwordEncoder.matches(updateUserDTO.getOldPassword(), user.getPassword())) {
+                throw new RuntimeException("旧密码不正确");
+            }
+
+            // 验证新密码和确认密码是否一致
+            if (!updateUserDTO.getNewPassword().equals(updateUserDTO.getConfirmPassword())) {
+                throw new RuntimeException("两次输入的新密码不一致");
+            }
+
+            // 验证新密码不能与旧密码相同
+            if (passwordEncoder.matches(updateUserDTO.getNewPassword(), user.getPassword())) {
+                throw new RuntimeException("新密码不能与旧密码相同");
+            }
+
+            // 更新密码
+            user.setPassword(passwordEncoder.encode(updateUserDTO.getNewPassword()));
+        }
 
         // 保存更新
         userMapper.update(user);

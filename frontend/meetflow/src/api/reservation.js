@@ -44,3 +44,8 @@ export const getDailyReservations = (date) => {
   })
 }
 
+// 获取用户当前会议室使用状态
+export const getCurrentUsage = () => {
+  return request.get('/reservations/current-usage')
+}
+

@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="dialogVisible"
-    title="修改用户信息"
+    title="修改密码"
     width="500px"
     :before-close="handleClose"
   >
@@ -11,32 +11,31 @@
       :rules="rules"
       label-width="100px"
     >
-      <el-form-item label="用户名" prop="username">
+      <el-form-item label="旧密码" prop="oldPassword">
         <el-input
-          v-model="formData.username"
-          disabled
-          placeholder="用户名不可修改"
+          v-model="formData.oldPassword"
+          type="password"
+          placeholder="请输入旧密码"
+          show-password
+          :prefix-icon="Lock"
         />
       </el-form-item>
-      <el-form-item label="真实姓名" prop="name">
+      <el-form-item label="新密码" prop="newPassword">
         <el-input
-          v-model="formData.name"
-          placeholder="请输入真实姓名"
-          :prefix-icon="UserFilled"
+          v-model="formData.newPassword"
+          type="password"
+          placeholder="请输入新密码（6-20位）"
+          show-password
+          :prefix-icon="Lock"
         />
       </el-form-item>
-      <el-form-item label="手机号" prop="phone">
+      <el-form-item label="确认密码" prop="confirmPassword">
         <el-input
-          v-model="formData.phone"
-          placeholder="请输入手机号"
-          :prefix-icon="Phone"
-        />
-      </el-form-item>
-      <el-form-item label="邮箱" prop="email">
-        <el-input
-          v-model="formData.email"
-          placeholder="请输入邮箱"
-          :prefix-icon="Message"
+          v-model="formData.confirmPassword"
+          type="password"
+          placeholder="请再次输入新密码"
+          show-password
+          :prefix-icon="Lock"
         />
       </el-form-item>
     </el-form>
@@ -54,17 +53,13 @@
 <script setup>
 import { ref, reactive, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { UserFilled, Phone, Message } from '@element-plus/icons-vue'
+import { Lock } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 
 const props = defineProps({
   visible: {
     type: Boolean,
     default: false
-  },
-  userInfo: {
-    type: Object,
-    default: () => ({})
   }
 })
 
@@ -76,54 +71,53 @@ const loading = ref(false)
 const userStore = useUserStore()
 
 const formData = reactive({
-  username: '',
-  name: '',
-  phone: '',
-  email: ''
+  oldPassword: '',
+  newPassword: '',
+  confirmPassword: ''
 })
 
-// 自定义验证规则：验证手机号
-const validatePhone = (rule, value, callback) => {
+// 自定义验证规则：验证密码
+const validatePassword = (rule, value, callback) => {
   if (!value) {
-    callback(new Error('请输入手机号'))
-  } else if (!/^1[3-9]\d{9}$/.test(value)) {
-    callback(new Error('手机号格式不正确'))
+    callback(new Error('请输入新密码'))
+  } else if (value.length < 6 || value.length > 20) {
+    callback(new Error('密码长度必须在6-20位之间'))
   } else {
     callback()
   }
 }
 
-// 自定义验证规则：验证邮箱
-const validateEmail = (rule, value, callback) => {
+// 自定义验证规则：验证确认密码
+const validateConfirmPassword = (rule, value, callback) => {
   if (!value) {
-    callback(new Error('请输入邮箱'))
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-    callback(new Error('邮箱格式不正确'))
+    callback(new Error('请确认新密码'))
+  } else if (value !== formData.newPassword) {
+    callback(new Error('两次输入的密码不一致'))
   } else {
     callback()
   }
 }
 
 const rules = {
-  name: [
-    { required: true, message: '请输入真实姓名', trigger: 'blur' }
+  oldPassword: [
+    { required: true, message: '请输入旧密码', trigger: 'blur' }
   ],
-  phone: [
-    { required: true, validator: validatePhone, trigger: 'blur' }
+  newPassword: [
+    { required: true, validator: validatePassword, trigger: 'blur' }
   ],
-  email: [
-    { required: true, validator: validateEmail, trigger: 'blur' }
+  confirmPassword: [
+    { required: true, validator: validateConfirmPassword, trigger: 'blur' }
   ]
 }
 
 // 监听visible变化
 watch(() => props.visible, (val) => {
   dialogVisible.value = val
-  if (val && props.userInfo) {
-    formData.username = props.userInfo.username || ''
-    formData.name = props.userInfo.name || ''
-    formData.phone = props.userInfo.phone || ''
-    formData.email = props.userInfo.email || ''
+  if (val) {
+    // 重置密码字段
+    formData.oldPassword = ''
+    formData.newPassword = ''
+    formData.confirmPassword = ''
   }
 })
 
@@ -147,19 +141,22 @@ const handleSubmit = async () => {
       loading.value = true
       try {
         await userStore.updateUser({
-          name: formData.name,
-          phone: formData.phone,
-          email: formData.email
+          name: userStore.userInfo.name,
+          phone: userStore.userInfo.phone,
+          email: userStore.userInfo.email,
+          oldPassword: formData.oldPassword,
+          newPassword: formData.newPassword,
+          confirmPassword: formData.confirmPassword
         })
-        ElMessage.success('用户信息更新成功')
+        ElMessage.success('密码修改成功')
         emit('success')
         handleClose()
       } catch (error) {
-        console.error('更新用户信息失败:', error)
+        console.error('修改密码失败:', error)
         // request.js的拦截器已经显示了错误消息，这里不需要再次显示
         // 但如果拦截器没有处理，这里作为备用
         if (!error.response || error.response.status >= 500) {
-          ElMessage.error(error.message || '更新用户信息失败')
+          ElMessage.error(error.message || '修改密码失败')
         }
       } finally {
         loading.value = false

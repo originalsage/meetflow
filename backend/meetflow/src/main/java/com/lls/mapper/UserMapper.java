@@ -33,5 +33,10 @@ public interface UserMapper {
      * 根据ID删除用户
      */
     int deleteById(@Param("id") Long id);
+
+    /**
+     * 查询所有用户
+     */
+    java.util.List<User> selectAll();
 }
 

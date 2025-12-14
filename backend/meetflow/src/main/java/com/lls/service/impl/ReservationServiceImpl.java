@@ -9,6 +9,7 @@ import com.lls.mapper.MeetingRoomMapper;
 import com.lls.mapper.ReservationMapper;
 import com.lls.mapper.UserMapper;
 import com.lls.service.ReservationService;
+import com.lls.vo.CurrentUsageVO;
 import com.lls.vo.ReservationVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
@@ -223,6 +224,75 @@ public class ReservationServiceImpl implements ReservationService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public CurrentUsageVO getCurrentUsage(Long userId) {
+        CurrentUsageVO usageVO = new CurrentUsageVO();
+        usageVO.setHasCurrentUsage(false);
+        
+        // 获取用户所有已通过的预约
+        List<Reservation> reservations = reservationMapper.selectByUserId(userId, 1);
+        LocalDateTime now = LocalDateTime.now();
+        
+        // 查找当前时间范围内的预约（开始前1小时到结束后1小时）
+        for (Reservation reservation : reservations) {
+            LocalDateTime startDateTime = reservation.getReservationDate()
+                    .atTime(reservation.getStartTime(), 0);
+            LocalDateTime endDateTime = reservation.getReservationDate()
+                    .atTime(reservation.getEndTime(), 0);
+            
+            // 开始前1小时和结束后1小时的时间范围
+            LocalDateTime rangeStart = startDateTime.minusHours(1);
+            LocalDateTime rangeEnd = endDateTime.plusHours(1);
+            
+            // 检查当前时间是否在这个范围内（包含边界）
+            if (!now.isBefore(rangeStart) && !now.isAfter(rangeEnd)) {
+                usageVO.setHasCurrentUsage(true);
+                ReservationVO reservationVO = convertToVO(reservation);
+                usageVO.setReservation(reservationVO);
+                usageVO.setStartDateTime(startDateTime);
+                usageVO.setEndDateTime(endDateTime);
+                
+                // 判断状态
+                if (now.isBefore(startDateTime)) {
+                    // 待开始
+                    usageVO.setStatus("pending");
+                    usageVO.setTimeDiffSeconds(java.time.Duration.between(now, startDateTime).getSeconds());
+                } else if (now.isBefore(endDateTime)) {
+                    // 进行中
+                    usageVO.setStatus("ongoing");
+                    usageVO.setTimeDiffSeconds(java.time.Duration.between(startDateTime, now).getSeconds());
+                } else {
+                    // 已结束
+                    usageVO.setStatus("ended");
+                    usageVO.setTimeDiffSeconds(java.time.Duration.between(endDateTime, now).getSeconds());
+                }
+                
+                return usageVO;
+            }
+        }
+        
+        // 如果没有当前使用中的，查找下一个待使用的预约
+        Reservation nextReservation = reservations.stream()
+                .filter(r -> {
+                    LocalDateTime startDateTime = r.getReservationDate()
+                            .atTime(r.getStartTime(), 0);
+                    return startDateTime.isAfter(now);
+                })
+                .sorted((r1, r2) -> {
+                    LocalDateTime start1 = r1.getReservationDate().atTime(r1.getStartTime(), 0);
+                    LocalDateTime start2 = r2.getReservationDate().atTime(r2.getStartTime(), 0);
+                    return start1.compareTo(start2);
+                })
+                .findFirst()
+                .orElse(null);
+        
+        if (nextReservation != null) {
+            usageVO.setNextReservation(convertToVO(nextReservation));
+        }
+        
+        return usageVO;
+    }
+
     /**
      * 转换为VO
      */
@@ -241,6 +311,9 @@ public class ReservationServiceImpl implements ReservationService {
         if (meetingRoom != null) {
             vo.setMeetingRoomName(meetingRoom.getName());
             vo.setRoomNumber(meetingRoom.getRoomNumber());
+            vo.setPhotoUrl(meetingRoom.getPhotoUrl());
+            // 调试日志
+            System.out.println("会议室ID: " + meetingRoom.getId() + ", 图片URL: " + meetingRoom.getPhotoUrl());
         } else {
             // 如果会议室已被删除，显示提示信息
             vo.setMeetingRoomName("会议室已删除");

@@ -26,5 +26,6 @@ public class ReservationVO {
     private Long approverId;
     private String approverName;
     private LocalDateTime createTime;
+    private String photoUrl; // 会议室图片
 }
 
