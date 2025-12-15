@@ -67,6 +67,15 @@ public interface ReservationMapper {
                                           @Param("excludeId") Long excludeId);
 
     /**
+     * 查询同一用户在同一时间段是否有其他预约（用于检查用户时间段重叠）
+     */
+    List<Reservation> selectByUserAndTime(@Param("userId") Long userId,
+                                          @Param("date") LocalDate date,
+                                          @Param("startTime") Integer startTime,
+                                          @Param("endTime") Integer endTime,
+                                          @Param("excludeId") Long excludeId);
+
+    /**
      * 更新预约记录
      */
     int update(Reservation reservation);

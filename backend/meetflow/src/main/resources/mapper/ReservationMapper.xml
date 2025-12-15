@@ -114,6 +114,21 @@
         </if>
     </select>
 
+    <select id="selectByUserAndTime" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM reservation
+        WHERE user_id = #{userId}
+        AND reservation_date = #{date}
+        AND status IN (0, 1)
+        AND (
+            (start_time &lt; #{endTime} AND end_time > #{startTime})
+        )
+        <if test="excludeId != null">
+            AND id != #{excludeId}
+        </if>
+    </select>
+
     <update id="update" parameterType="com.lls.entity.Reservation">
         UPDATE reservation
         <set>

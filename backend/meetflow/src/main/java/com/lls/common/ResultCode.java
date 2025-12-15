@@ -32,6 +32,7 @@ public enum ResultCode {
     RESERVATION_ALREADY_APPROVED(3004, "预约已审批，无法取消"),
     RESERVATION_ALREADY_CANCELLED(3005, "预约已取消"),
     RESERVATION_STATUS_INVALID(3006, "预约状态无效"),
+    RESERVATION_USER_TIME_CONFLICT(3007, "您在该时间段已有其他预约，不能同时预约多个会议室"),
     
     PARAM_ERROR(4001, "参数错误"),
     FILE_UPLOAD_ERROR(4002, "文件上传失败");

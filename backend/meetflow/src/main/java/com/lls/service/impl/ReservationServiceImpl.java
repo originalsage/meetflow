@@ -70,16 +70,28 @@ public class ReservationServiceImpl implements ReservationService {
             throw new RuntimeException(ResultCode.MEETING_ROOM_CAPACITY_INSUFFICIENT.getMessage());
         }
 
-        // 检查时间冲突
-        List<Reservation> conflicts = reservationMapper.selectByRoomAndTime(
+        // 检查会议室时间冲突
+        List<Reservation> roomConflicts = reservationMapper.selectByRoomAndTime(
                 reservationDTO.getMeetingRoomId(),
                 reservationDTO.getReservationDate(),
                 reservationDTO.getStartTime(),
                 reservationDTO.getEndTime(),
                 null
         );
-        if (!conflicts.isEmpty()) {
+        if (!roomConflicts.isEmpty()) {
             throw new RuntimeException(ResultCode.RESERVATION_TIME_CONFLICT.getMessage());
+        }
+
+        // 检查用户时间段重叠（同一用户不能在同一时间段预约多个会议室）
+        List<Reservation> userConflicts = reservationMapper.selectByUserAndTime(
+                userId,
+                reservationDTO.getReservationDate(),
+                reservationDTO.getStartTime(),
+                reservationDTO.getEndTime(),
+                null
+        );
+        if (!userConflicts.isEmpty()) {
+            throw new RuntimeException(ResultCode.RESERVATION_USER_TIME_CONFLICT.getMessage());
         }
 
         // 创建预约记录
@@ -205,16 +217,28 @@ public class ReservationServiceImpl implements ReservationService {
             throw new RuntimeException(ResultCode.MEETING_ROOM_CAPACITY_INSUFFICIENT.getMessage());
         }
 
-        // 审批时再次检查时间冲突（排除当前预约本身）
-        List<Reservation> conflicts = reservationMapper.selectByRoomAndTime(
+        // 审批时再次检查会议室时间冲突（排除当前预约本身）
+        List<Reservation> roomConflicts = reservationMapper.selectByRoomAndTime(
                 reservation.getMeetingRoomId(),
                 reservation.getReservationDate(),
                 reservation.getStartTime(),
                 reservation.getEndTime(),
                 reservation.getId() // 排除当前预约
         );
-        if (!conflicts.isEmpty()) {
+        if (!roomConflicts.isEmpty()) {
             throw new RuntimeException(ResultCode.RESERVATION_TIME_CONFLICT.getMessage());
+        }
+
+        // 审批时再次检查用户时间段重叠（排除当前预约本身）
+        List<Reservation> userConflicts = reservationMapper.selectByUserAndTime(
+                reservation.getUserId(),
+                reservation.getReservationDate(),
+                reservation.getStartTime(),
+                reservation.getEndTime(),
+                reservation.getId() // 排除当前预约
+        );
+        if (!userConflicts.isEmpty()) {
+            throw new RuntimeException(ResultCode.RESERVATION_USER_TIME_CONFLICT.getMessage());
         }
 
         reservation.setStatus(1); // 已通过
