@@ -9,7 +9,7 @@
             placeholder="筛选状态"
             style="width: 200px"
             clearable
-            @change="fetchReservations"
+            @change="handleStatusChange"
           >
             <el-option label="待审批" :value="0" />
             <el-option label="已通过" :value="1" />
@@ -25,7 +25,6 @@
         v-loading="loading"
         style="width: 100%"
       >
-        <el-table-column prop="id" label="ID" width="80" />
         <el-table-column label="会议室" width="150">
           <template #default="{ row }">
             {{ row.meetingRoomName || row.meetingRoom?.name || '-' }}
@@ -76,6 +75,19 @@
       </el-table>
       
       <el-empty v-if="!loading && reservations.length === 0" description="暂无预约记录" />
+      
+      <!-- 分页组件 -->
+      <el-pagination
+        v-if="total > 0"
+        v-model:current-page="currentPage"
+        v-model:page-size="pageSize"
+        :page-sizes="[12, 24, 50, 100]"
+        :total="total"
+        layout="total, sizes, prev, pager, next, jumper"
+        style="margin-top: 20px; justify-content: flex-end"
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+      />
     </el-card>
   </div>
 </template>
@@ -83,12 +95,15 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getMyReservations, cancelReservation } from '@/api/reservation'
+import { getMyReservationsPage, cancelReservation } from '@/api/reservation'
 import dayjs from 'dayjs'
 
 const reservations = ref([])
 const loading = ref(false)
 const statusFilter = ref(null)
+const currentPage = ref(1)
+const pageSize = ref(12)
+const total = ref(0)
 
 const formatDateTime = (dateTime) => {
   if (!dateTime) return '-'
@@ -114,14 +129,44 @@ const getStatusType = (status) => {
 const fetchReservations = async () => {
   loading.value = true
   try {
-    const params = statusFilter.value !== null ? { status: statusFilter.value } : {}
-    const res = await getMyReservations(params)
-    reservations.value = res.data || []
+    const params = {
+      page: currentPage.value,
+      pageSize: pageSize.value
+    }
+    if (statusFilter.value !== null) {
+      params.status = statusFilter.value
+    }
+    const res = await getMyReservationsPage(params)
+    if (res.data) {
+      reservations.value = res.data.records || []
+      total.value = res.data.total || 0
+    } else {
+      reservations.value = []
+      total.value = 0
+    }
   } catch (error) {
     console.error('获取预约记录失败:', error)
+    reservations.value = []
+    total.value = 0
   } finally {
     loading.value = false
   }
+}
+
+const handleSizeChange = (val) => {
+  pageSize.value = val
+  currentPage.value = 1
+  fetchReservations()
+}
+
+const handleCurrentChange = (val) => {
+  currentPage.value = val
+  fetchReservations()
+}
+
+const handleStatusChange = () => {
+  currentPage.value = 1
+  fetchReservations()
 }
 
 const handleCancel = async (id) => {

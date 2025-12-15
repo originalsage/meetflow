@@ -10,6 +10,11 @@ export const getMyReservations = (params) => {
   return request.get('/reservations/my', { params })
 }
 
+// 分页查询我的预约记录
+export const getMyReservationsPage = (params) => {
+  return request.get('/reservations/my/page', { params })
+}
+
 // 获取预约详情
 export const getReservationDetail = (id) => {
   return request.get(`/reservations/${id}`)
@@ -23,6 +28,11 @@ export const cancelReservation = (id) => {
 // 查询所有预约记录（管理员）
 export const getAllReservations = (params) => {
   return request.get('/reservations/all', { params })
+}
+
+// 分页查询所有预约记录（管理员）
+export const getAllReservationsPage = (params) => {
+  return request.get('/reservations/all/page', { params })
 }
 
 // 审批预约（管理员）
@@ -47,5 +57,10 @@ export const getDailyReservations = (date) => {
 // 获取用户当前会议室使用状态
 export const getCurrentUsage = () => {
   return request.get('/reservations/current-usage')
+}
+
+// 完成预约（确认使用）
+export const completeReservation = (id) => {
+  return request.put(`/reservations/${id}/complete`)
 }
 

@@ -82,6 +82,3 @@
 根据建表SQL，默认测试账号：
 - **管理员**: username=`admin`, password=`admin123` (需要BCrypt加密后的密码)
 - **普通用户**: username=`user001`, password=`user123` (需要BCrypt加密后的密码)
-
-**注意**：如果数据库中的密码是明文，需要先使用BCrypt加密后存储，或者修改登录逻辑。
-

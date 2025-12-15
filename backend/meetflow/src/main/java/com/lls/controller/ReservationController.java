@@ -49,6 +49,20 @@ public class ReservationController {
     }
 
     /**
+     * 分页查询我的预约记录
+     */
+    @GetMapping("/my/page")
+    public Result<com.lls.common.PageResult<ReservationVO>> getMyReservationsPage(
+            @RequestParam(required = false) Integer status,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "12") Integer pageSize,
+            HttpServletRequest request) {
+        Long userId = getUserIdFromRequest(request);
+        com.lls.common.PageResult<ReservationVO> pageResult = reservationService.getMyReservationsPage(userId, status, page, pageSize);
+        return Result.success(pageResult);
+    }
+
+    /**
      * 获取预约详情
      */
     @GetMapping("/{id}")
@@ -76,6 +90,20 @@ public class ReservationController {
         checkAdmin(request);
         List<ReservationVO> reservations = reservationService.getAllReservations(status);
         return Result.success(reservations);
+    }
+
+    /**
+     * 分页查询所有预约记录（管理员）
+     */
+    @GetMapping("/all/page")
+    public Result<com.lls.common.PageResult<ReservationVO>> getAllReservationsPage(
+            @RequestParam(required = false) Integer status,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "12") Integer pageSize,
+            HttpServletRequest request) {
+        checkAdmin(request);
+        com.lls.common.PageResult<ReservationVO> pageResult = reservationService.getAllReservationsPage(status, page, pageSize);
+        return Result.success(pageResult);
     }
 
     /**
@@ -131,6 +159,16 @@ public class ReservationController {
         Long userId = getUserIdFromRequest(request);
         com.lls.vo.CurrentUsageVO usage = reservationService.getCurrentUsage(userId);
         return Result.success(usage);
+    }
+
+    /**
+     * 完成预约（确认使用）
+     */
+    @PutMapping("/{id}/complete")
+    public Result<Void> completeReservation(@PathVariable Long id, HttpServletRequest request) {
+        Long userId = getUserIdFromRequest(request);
+        reservationService.completeReservation(id, userId);
+        return Result.success();
     }
 
     /**

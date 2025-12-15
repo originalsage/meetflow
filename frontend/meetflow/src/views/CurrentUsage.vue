@@ -82,6 +82,19 @@
                   <div class="time-label">{{ getTimeLabel(usageData.status) }}</div>
                   <div class="time-value">{{ formatTimeDiff(usageData.timeDiffSeconds, usageData.status) }}</div>
                 </div>
+                <!-- 确认使用按钮：仅在会议进行中且状态为已通过时显示（已完成状态不显示） -->
+                <div v-if="usageData.status === 'ongoing' && usageData.reservation?.status === 1" class="confirm-button-wrapper">
+                  <el-button 
+                    type="success" 
+                    size="large" 
+                    :icon="Check" 
+                    :loading="completing"
+                    @click="handleCompleteReservation"
+                    class="confirm-button"
+                  >
+                    确认使用
+                  </el-button>
+                </div>
               </div>
             </div>
           </el-col>
@@ -162,13 +175,14 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Refresh, Clock, Picture, Location, Calendar, User } from '@element-plus/icons-vue'
-import { getCurrentUsage } from '@/api/reservation'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Refresh, Clock, Picture, Location, Calendar, User, Check } from '@element-plus/icons-vue'
+import { getCurrentUsage, completeReservation } from '@/api/reservation'
 import dayjs from 'dayjs'
 
 const loading = ref(false)
 const usageData = ref(null)
+const completing = ref(false)
 let timer = null
 
 // 获取使用状态
@@ -273,6 +287,39 @@ const getStatusClass = (status) => {
 // 检查是否有有效的图片URL
 const hasPhotoUrl = (photoUrl) => {
   return photoUrl && typeof photoUrl === 'string' && photoUrl.trim().length > 0
+}
+
+// 确认使用（完成预约）
+const handleCompleteReservation = async () => {
+  if (!usageData.value?.reservation?.id) {
+    ElMessage.error('预约信息不存在')
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      '确认使用后，该预约将标记为已完成。是否确认？',
+      '确认使用',
+      {
+        confirmButtonText: '确认',
+        cancelButtonText: '取消',
+        type: 'info'
+      }
+    )
+
+    completing.value = true
+    await completeReservation(usageData.value.reservation.id)
+    ElMessage.success('确认使用成功')
+    // 重新获取使用状态
+    await fetchUsage()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('确认使用失败:', error)
+      ElMessage.error(error.response?.data?.message || '确认使用失败')
+    }
+  } finally {
+    completing.value = false
+  }
 }
 
 // 更新倒计时
@@ -460,6 +507,18 @@ onUnmounted(() => {
 /* 时间显示 */
 .time-display {
   margin-top: auto;
+}
+
+.confirm-button-wrapper {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.confirm-button {
+  width: 100%;
+  height: 50px;
+  font-size: 16px;
+  font-weight: 500;
 }
 
 .time-card {

@@ -22,6 +22,11 @@ public interface ReservationService {
     List<ReservationVO> getMyReservations(Long userId, Integer status);
 
     /**
+     * 分页查询我的预约记录
+     */
+    com.lls.common.PageResult<ReservationVO> getMyReservationsPage(Long userId, Integer status, Integer page, Integer pageSize);
+
+    /**
      * 查询预约详情
      */
     ReservationVO getReservationById(Long id);
@@ -35,6 +40,11 @@ public interface ReservationService {
      * 查询所有预约记录（管理员）
      */
     List<ReservationVO> getAllReservations(Integer status);
+
+    /**
+     * 分页查询所有预约记录（管理员）
+     */
+    com.lls.common.PageResult<ReservationVO> getAllReservationsPage(Integer status, Integer page, Integer pageSize);
 
     /**
      * 审批预约（通过）
@@ -60,5 +70,10 @@ public interface ReservationService {
      * 获取用户当前会议室使用状态
      */
     com.lls.vo.CurrentUsageVO getCurrentUsage(Long userId);
+
+    /**
+     * 完成预约（确认使用）
+     */
+    void completeReservation(Long id, Long userId);
 }
 

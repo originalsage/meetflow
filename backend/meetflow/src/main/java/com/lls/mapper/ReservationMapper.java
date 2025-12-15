@@ -28,9 +28,34 @@ public interface ReservationMapper {
     List<Reservation> selectByUserId(@Param("userId") Long userId, @Param("status") Integer status);
 
     /**
+     * 根据用户ID分页查询预约记录
+     */
+    List<Reservation> selectByUserIdWithPage(@Param("userId") Long userId, 
+                                             @Param("status") Integer status,
+                                             @Param("offset") Integer offset,
+                                             @Param("limit") Integer limit);
+
+    /**
+     * 统计用户预约记录总数
+     */
+    Long countByUserId(@Param("userId") Long userId, @Param("status") Integer status);
+
+    /**
      * 查询所有预约记录
      */
     List<Reservation> selectAll(@Param("status") Integer status);
+
+    /**
+     * 分页查询所有预约记录
+     */
+    List<Reservation> selectAllWithPage(@Param("status") Integer status,
+                                       @Param("offset") Integer offset,
+                                       @Param("limit") Integer limit);
+
+    /**
+     * 统计所有预约记录总数
+     */
+    Long countAll(@Param("status") Integer status);
 
     /**
      * 查询时间冲突的预约记录

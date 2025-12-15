@@ -49,6 +49,27 @@
         ORDER BY reservation_date DESC, start_time DESC
     </select>
 
+    <select id="selectByUserIdWithPage" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM reservation
+        WHERE user_id = #{userId}
+        <if test="status != null">
+            AND status = #{status}
+        </if>
+        ORDER BY CASE WHEN status = 0 THEN 0 ELSE 1 END, approve_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countByUserId" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM reservation
+        WHERE user_id = #{userId}
+        <if test="status != null">
+            AND status = #{status}
+        </if>
+    </select>
+
     <select id="selectAll" resultMap="BaseResultMap">
         SELECT
         <include refid="Base_Column_List"/>
@@ -57,6 +78,25 @@
             WHERE status = #{status}
         </if>
         ORDER BY create_time DESC
+    </select>
+
+    <select id="selectAllWithPage" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM reservation
+        <if test="status != null">
+            WHERE status = #{status}
+        </if>
+        ORDER BY create_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countAll" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM reservation
+        <if test="status != null">
+            WHERE status = #{status}
+        </if>
     </select>
 
     <select id="selectByRoomAndTime" resultMap="BaseResultMap">
@@ -96,7 +136,7 @@
         FROM reservation
         WHERE reservation_date >= #{weekStartDate}
         AND reservation_date &lt; DATE_ADD(#{weekStartDate}, INTERVAL 7 DAY)
-        AND status IN (0, 1)
+        AND status IN (0, 1, 4)
         ORDER BY reservation_date ASC, start_time ASC
     </select>
 
@@ -105,7 +145,7 @@
         <include refid="Base_Column_List"/>
         FROM reservation
         WHERE reservation_date = #{date}
-        AND status IN (0, 1)
+        AND status IN (0, 1, 4)
         ORDER BY start_time ASC
     </select>
 

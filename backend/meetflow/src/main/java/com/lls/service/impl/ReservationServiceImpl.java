@@ -101,6 +101,23 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     @Override
+    public com.lls.common.PageResult<ReservationVO> getMyReservationsPage(Long userId, Integer status, Integer page, Integer pageSize) {
+        // 计算偏移量
+        Integer offset = (page - 1) * pageSize;
+        
+        // 查询总数
+        Long total = reservationMapper.countByUserId(userId, status);
+        
+        // 分页查询
+        List<Reservation> reservations = reservationMapper.selectByUserIdWithPage(userId, status, offset, pageSize);
+        List<ReservationVO> voList = reservations.stream()
+                .map(this::convertToVO)
+                .collect(Collectors.toList());
+        
+        return new com.lls.common.PageResult<>(voList, total, (long) page, (long) pageSize);
+    }
+
+    @Override
     public ReservationVO getReservationById(Long id) {
         Reservation reservation = reservationMapper.selectById(id);
         if (reservation == null) {
@@ -141,6 +158,23 @@ public class ReservationServiceImpl implements ReservationService {
         return reservations.stream()
                 .map(this::convertToVO)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public com.lls.common.PageResult<ReservationVO> getAllReservationsPage(Integer status, Integer page, Integer pageSize) {
+        // 计算偏移量
+        Integer offset = (page - 1) * pageSize;
+        
+        // 查询总数
+        Long total = reservationMapper.countAll(status);
+        
+        // 分页查询
+        List<Reservation> reservations = reservationMapper.selectAllWithPage(status, offset, pageSize);
+        List<ReservationVO> voList = reservations.stream()
+                .map(this::convertToVO)
+                .collect(Collectors.toList());
+        
+        return new com.lls.common.PageResult<>(voList, total, (long) page, (long) pageSize);
     }
 
     @Override
@@ -229,8 +263,15 @@ public class ReservationServiceImpl implements ReservationService {
         CurrentUsageVO usageVO = new CurrentUsageVO();
         usageVO.setHasCurrentUsage(false);
         
-        // 获取用户所有已通过的预约
-        List<Reservation> reservations = reservationMapper.selectByUserId(userId, 1);
+        // 获取用户所有已通过和已完成的预约（状态1和4）
+        List<Reservation> approvedReservations = reservationMapper.selectByUserId(userId, 1);
+        List<Reservation> completedReservations = reservationMapper.selectByUserId(userId, 4);
+        
+        // 合并两个列表
+        List<Reservation> reservations = new java.util.ArrayList<>();
+        reservations.addAll(approvedReservations);
+        reservations.addAll(completedReservations);
+        
         LocalDateTime now = LocalDateTime.now();
         
         // 查找当前时间范围内的预约（开始前1小时到结束后1小时）
@@ -271,8 +312,8 @@ public class ReservationServiceImpl implements ReservationService {
             }
         }
         
-        // 如果没有当前使用中的，查找下一个待使用的预约
-        Reservation nextReservation = reservations.stream()
+        // 如果没有当前使用中的，查找下一个待使用的预约（只查找状态为1的已通过预约）
+        Reservation nextReservation = approvedReservations.stream()
                 .filter(r -> {
                     LocalDateTime startDateTime = r.getReservationDate()
                             .atTime(r.getStartTime(), 0);
@@ -291,6 +332,29 @@ public class ReservationServiceImpl implements ReservationService {
         }
         
         return usageVO;
+    }
+
+    @Override
+    @Transactional
+    public void completeReservation(Long id, Long userId) {
+        Reservation reservation = reservationMapper.selectById(id);
+        if (reservation == null) {
+            throw new RuntimeException(ResultCode.RESERVATION_NOT_FOUND.getMessage());
+        }
+
+        // 验证权限
+        if (!reservation.getUserId().equals(userId)) {
+            throw new RuntimeException("无权限完成此预约");
+        }
+
+        // 检查状态：只能完成已通过的预约（status=1）
+        if (reservation.getStatus() != 1) {
+            throw new RuntimeException("只能完成已通过的预约");
+        }
+
+        // 更新状态为已完成
+        reservation.setStatus(4);
+        reservationMapper.update(reservation);
     }
 
     /**
