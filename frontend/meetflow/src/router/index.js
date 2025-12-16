@@ -16,6 +16,12 @@ const routes = [
     meta: { title: '注册' }
   },
   {
+    path: '/confirm-usage',
+    name: 'ConfirmUsage',
+    component: () => import('@/views/ConfirmUsage.vue'),
+    meta: { title: '确认使用', noAuth: true }
+  },
+  {
     path: '/',
     component: () => import('@/layout/Index.vue'),
     redirect: '/meeting-rooms',
@@ -100,8 +106,8 @@ router.beforeEach((to, from, next) => {
     return
   }
   
-  // 如果访问需要登录的页面且未登录，跳转到登录页
-  if (to.path !== '/login' && to.path !== '/register' && !userStore.token) {
+  // 如果访问需要登录的页面且未登录，跳转到登录页（排除不需要登录的页面）
+  if (to.path !== '/login' && to.path !== '/register' && !to.meta.noAuth && !userStore.token) {
     next('/login')
     return
   }

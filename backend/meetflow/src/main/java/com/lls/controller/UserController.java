@@ -44,7 +44,9 @@ public class UserController {
      * 删除用户（仅超级管理员可访问）
      */
     @DeleteMapping("/{id}")
-    public Result<Void> deleteUser(HttpServletRequest request, @PathVariable Long id) {
+    public Result<Void> deleteUser(HttpServletRequest request, 
+                                    @PathVariable Long id,
+                                    @RequestParam(required = false, defaultValue = "false") Boolean deleteReservations) {
         // 验证是否为超级管理员
         String token = getTokenFromRequest(request);
         Integer role = jwtUtil.getRoleFromToken(token);
@@ -52,7 +54,7 @@ public class UserController {
             throw new RuntimeException("无权限访问");
         }
         
-        userService.deleteUser(id);
+        userService.deleteUser(id, deleteReservations);
         return Result.success(null);
     }
 

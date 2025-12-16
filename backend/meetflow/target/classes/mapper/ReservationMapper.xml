@@ -46,7 +46,7 @@
         <if test="status != null">
             AND status = #{status}
         </if>
-        ORDER BY reservation_date DESC, start_time DESC
+        ORDER BY update_time DESC
     </select>
 
     <select id="selectByUserIdWithPage" resultMap="BaseResultMap">
@@ -57,7 +57,7 @@
         <if test="status != null">
             AND status = #{status}
         </if>
-        ORDER BY CASE WHEN status = 0 THEN 0 ELSE 1 END, approve_time DESC
+        ORDER BY update_time DESC
         LIMIT #{offset}, #{limit}
     </select>
 
@@ -163,6 +163,17 @@
         AND status IN (0, 1, 4)
         ORDER BY start_time ASC
     </select>
+
+    <select id="selectByMeetingRoomId" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM reservation
+        WHERE meeting_room_id = #{meetingRoomId}
+    </select>
+
+    <delete id="deleteById">
+        DELETE FROM reservation WHERE id = #{id}
+    </delete>
 
 </mapper>
 

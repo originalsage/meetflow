@@ -86,19 +86,48 @@ const fetchUsers = async () => {
 // 删除用户
 const handleDelete = async (user) => {
   try {
-    await ElMessageBox.confirm(
-      `确定要删除用户 "${user.username}" 吗？此操作不可恢复！`,
-      '确认删除',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    )
+    // 先尝试删除，如果用户有预约记录，后端会返回错误信息
+    // 根据错误信息判断是否需要删除预约
+    let deleteReservations = false
     
-    await deleteUser(user.id)
-    ElMessage.success('删除成功')
-    fetchUsers()
+    try {
+      // 先尝试不删除预约的方式删除用户
+      await deleteUser(user.id, false)
+      ElMessage.success('删除成功')
+      fetchUsers()
+      return
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || ''
+      
+      // 如果错误信息提示用户有预约记录，询问是否一并删除
+      if (errorMessage.includes('预约记录') || errorMessage.includes('预约')) {
+        try {
+          await ElMessageBox.confirm(
+            `用户 "${user.username}" 存在预约记录，是否一并删除预约记录？`,
+            '确认删除',
+            {
+              confirmButtonText: '删除用户和预约',
+              cancelButtonText: '取消',
+              type: 'warning',
+              distinguishCancelAndClose: true
+            }
+          )
+          deleteReservations = true
+        } catch (confirmError) {
+          if (confirmError === 'cancel') {
+            return // 用户取消删除
+          }
+        }
+        
+        // 再次尝试删除，这次选择删除预约
+        await deleteUser(user.id, deleteReservations)
+        ElMessage.success('删除成功')
+        fetchUsers()
+      } else {
+        // 其他错误直接显示
+        ElMessage.error(errorMessage || '删除失败')
+      }
+    }
   } catch (error) {
     if (error !== 'cancel') {
       ElMessage.error(error.response?.data?.message || '删除失败')

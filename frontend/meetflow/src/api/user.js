@@ -6,8 +6,12 @@ export const getAllUsers = () => {
 }
 
 // 删除用户（超级管理员）
-export const deleteUser = (id) => {
-  return request.delete(`/users/${id}`)
+export const deleteUser = (id, deleteReservations = false) => {
+  return request.delete(`/users/${id}`, {
+    params: {
+      deleteReservations: deleteReservations
+    }
+  })
 }
 
 // 提升用户权限（超级管理员）

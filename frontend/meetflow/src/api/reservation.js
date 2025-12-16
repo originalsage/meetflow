@@ -64,3 +64,27 @@ export const completeReservation = (id) => {
   return request.put(`/reservations/${id}/complete`)
 }
 
+// 通过token完成预约（确认使用）
+export const completeReservationByToken = (id, token) => {
+  return request.put(`/reservations/${id}/complete-by-token`, null, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
+}
+
+// 统计用户预约记录总数（用于检查用户是否有预约）
+// 注意：这里需要管理员权限，或者使用其他方式检查
+export const countByUserId = async (userId) => {
+  // 由于前端无法直接查询其他用户的预约，我们通过尝试删除来检查
+  // 或者可以添加一个管理员API来检查
+  // 这里先返回一个简单的实现，实际应该调用后端API
+  try {
+    // 这里应该调用一个管理员API来检查用户预约数量
+    // 暂时返回false，由后端返回错误信息
+    return false
+  } catch (error) {
+    return false
+  }
+}
+

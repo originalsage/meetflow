@@ -3,11 +3,13 @@ package com.lls.service.impl;
 import com.lls.common.ResultCode;
 import com.lls.dto.PromoteUserDTO;
 import com.lls.entity.User;
+import com.lls.mapper.ReservationMapper;
 import com.lls.mapper.UserMapper;
 import com.lls.service.UserService;
 import com.lls.vo.UserVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,6 +23,7 @@ import java.util.stream.Collectors;
 public class UserServiceImpl implements UserService {
 
     private final UserMapper userMapper;
+    private final ReservationMapper reservationMapper;
 
     @Override
     public List<UserVO> getAllUsers() {
@@ -41,7 +44,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void deleteUser(Long userId) {
+    @Transactional
+    public void deleteUser(Long userId, Boolean deleteReservations) {
         User user = userMapper.selectById(userId);
         if (user == null) {
             throw new RuntimeException(ResultCode.USER_NOT_FOUND.getMessage());
@@ -50,6 +54,19 @@ public class UserServiceImpl implements UserService {
         // 不能删除超级管理员
         if (user.getRole() == 2) {
             throw new RuntimeException("不能删除超级管理员");
+        }
+        
+        // 检查是否有预约记录
+        Long reservationCount = reservationMapper.countByUserId(userId, null);
+        if (reservationCount != null && reservationCount > 0) {
+            if (deleteReservations == null || !deleteReservations) {
+                throw new RuntimeException("该用户存在预约记录，无法删除。如需删除，请选择一并删除预约记录。");
+            }
+            // 删除该用户的所有预约记录
+            List<com.lls.entity.Reservation> reservations = reservationMapper.selectByUserId(userId, null);
+            for (com.lls.entity.Reservation reservation : reservations) {
+                reservationMapper.deleteById(reservation.getId());
+            }
         }
         
         userMapper.deleteById(userId);

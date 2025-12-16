@@ -9,16 +9,18 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "npm run build && powershell -Command \"Copy-Item -Path './dist/*' -Destination 'E:/develop/nginx-1.22.0-web/html/' -Recurse -Force\""
   },
   "dependencies": {
-    "vue": "^3.5.25",
-    "vue-router": "^4.4.5",
-    "pinia": "^2.2.6",
-    "axios": "^1.7.7",
-    "element-plus": "^2.8.8",
     "@element-plus/icons-vue": "^2.3.1",
-    "dayjs": "^1.11.13"
+    "axios": "^1.7.7",
+    "dayjs": "^1.11.13",
+    "element-plus": "^2.8.8",
+    "pinia": "^2.2.6",
+    "qrcode": "^1.5.4",
+    "vue": "^3.5.25",
+    "vue-router": "^4.4.5"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.2",

@@ -16,8 +16,10 @@ public interface UserService {
 
     /**
      * 删除用户
+     * @param userId 用户ID
+     * @param deleteReservations 是否一并删除该用户的预约记录
      */
-    void deleteUser(Long userId);
+    void deleteUser(Long userId, Boolean deleteReservations);
 
     /**
      * 提升用户权限（只能提升至普通管理员）

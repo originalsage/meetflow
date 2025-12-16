@@ -5,6 +5,7 @@ import com.lls.dto.MeetingRoomDTO;
 import com.lls.dto.ReservationQueryDTO;
 import com.lls.entity.MeetingRoom;
 import com.lls.mapper.MeetingRoomMapper;
+import com.lls.mapper.ReservationMapper;
 import com.lls.service.MeetingRoomService;
 import com.lls.service.OssService;
 import com.lls.vo.MeetingRoomVO;
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
 public class MeetingRoomServiceImpl implements MeetingRoomService {
 
     private final MeetingRoomMapper meetingRoomMapper;
+    private final ReservationMapper reservationMapper;
     private final OssService ossService;
 
     @Override
@@ -132,6 +134,13 @@ public class MeetingRoomServiceImpl implements MeetingRoomService {
         if (meetingRoom == null) {
             throw new RuntimeException(ResultCode.MEETING_ROOM_NOT_FOUND.getMessage());
         }
+        
+        // 检查是否存在相关预约记录
+        List<com.lls.entity.Reservation> reservations = reservationMapper.selectByMeetingRoomId(id);
+        if (reservations != null && !reservations.isEmpty()) {
+            throw new RuntimeException(ResultCode.MEETING_ROOM_HAS_RESERVATIONS.getMessage());
+        }
+        
         meetingRoomMapper.deleteById(id);
     }
 

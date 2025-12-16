@@ -89,5 +89,15 @@ public interface ReservationMapper {
      * 查询当天的预约情况
      */
     List<Reservation> selectDailySchedule(@Param("date") LocalDate date);
+
+    /**
+     * 根据会议室ID查询预约记录
+     */
+    List<Reservation> selectByMeetingRoomId(@Param("meetingRoomId") Long meetingRoomId);
+
+    /**
+     * 根据ID删除预约记录
+     */
+    int deleteById(@Param("id") Long id);
 }
 

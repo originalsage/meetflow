@@ -25,6 +25,7 @@ public enum ResultCode {
     MEETING_ROOM_NUMBER_EXISTS(2002, "房号已存在"),
     MEETING_ROOM_NOT_AVAILABLE(2003, "会议室不可预约"),
     MEETING_ROOM_CAPACITY_INSUFFICIENT(2004, "会议室容量不足"),
+    MEETING_ROOM_HAS_RESERVATIONS(2005, "该会议室存在相关预约记录，无法删除"),
     
     RESERVATION_NOT_FOUND(3001, "预约记录不存在"),
     RESERVATION_TIME_CONFLICT(3002, "该时间段已被预约"),

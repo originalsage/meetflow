@@ -172,6 +172,16 @@ public class ReservationController {
     }
 
     /**
+     * 通过Token完成预约（确认使用）- 用于二维码扫描
+     */
+    @PutMapping("/{id}/complete-by-token")
+    public Result<Void> completeReservationByToken(@PathVariable Long id, HttpServletRequest request) {
+        Long userId = getUserIdFromRequest(request);
+        reservationService.completeReservation(id, userId);
+        return Result.success();
+    }
+
+    /**
      * 检查是否为管理员（包括普通管理员和超级管理员）
      */
     private void checkAdmin(HttpServletRequest request) {

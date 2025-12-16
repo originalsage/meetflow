@@ -20,8 +20,8 @@
                   :src="usageData.reservation.photoUrl"
                   fit="cover"
                   class="room-image"
-                  :preview-src-list="[usageData.reservation.photoUrl]"
                   :lazy="false"
+                  :preview-src-list="[]"
                 >
                   <template #error>
                     <div class="no-image">
@@ -50,7 +50,25 @@
           <el-col :xs="24" :md="14">
             <div class="meeting-content">
               <div class="meeting-header">
-                <h3 class="room-name">{{ usageData.reservation?.meetingRoomName }}</h3>
+                <div class="room-name-row">
+                  <h3 class="room-name">{{ usageData.reservation?.meetingRoomName }}</h3>
+                  <el-tag 
+                    v-if="usageData.reservation?.status === 1" 
+                    type="warning" 
+                    size="large" 
+                    class="confirm-status-tag"
+                  >
+                    待确认使用
+                  </el-tag>
+                  <el-tag 
+                    v-if="usageData.reservation?.status === 4" 
+                    type="success" 
+                    size="large" 
+                    class="confirm-status-tag"
+                  >
+                    已确认使用
+                  </el-tag>
+                </div>
                 <p class="room-number">
                   <el-icon><Location /></el-icon>
                   <span>{{ usageData.reservation?.roomNumber }}</span>
@@ -82,17 +100,16 @@
                   <div class="time-label">{{ getTimeLabel(usageData.status) }}</div>
                   <div class="time-value">{{ formatTimeDiff(usageData.timeDiffSeconds, usageData.status) }}</div>
                 </div>
-                <!-- 确认使用按钮：仅在会议进行中且状态为已通过时显示（已完成状态不显示） -->
+                <!-- 获取二维码按钮：仅在会议进行中且状态为已通过时显示（已完成状态不显示） -->
                 <div v-if="usageData.status === 'ongoing' && usageData.reservation?.status === 1" class="confirm-button-wrapper">
                   <el-button 
-                    type="success" 
+                    type="primary" 
                     size="large" 
-                    :icon="Check" 
-                    :loading="completing"
-                    @click="handleCompleteReservation"
+                    :icon="Link" 
+                    @click="showQrCodeDialog"
                     class="confirm-button"
                   >
-                    确认使用
+                    获取二维码
                   </el-button>
                 </div>
               </div>
@@ -118,8 +135,8 @@
                   :src="usageData.nextReservation.photoUrl"
                   fit="cover"
                   class="next-room-image"
-                  :preview-src-list="[usageData.nextReservation.photoUrl]"
                   :lazy="false"
+                  :preview-src-list="[]"
                 >
                   <template #error>
                     <div class="no-image">
@@ -170,19 +187,57 @@
       <!-- 没有预约 -->
       <el-empty v-else description="暂无预约记录" />
     </el-card>
+
+    <!-- 二维码对话框 -->
+    <el-dialog
+      v-model="qrCodeDialogVisible"
+      title="扫描二维码确认使用"
+      width="420px"
+      :close-on-click-modal="false"
+      class="qr-code-dialog"
+    >
+      <div class="qr-code-container">
+        <div class="qr-code-header">
+          <el-icon class="qr-icon"><Link /></el-icon>
+          <h3 class="qr-title">扫描二维码</h3>
+          <p class="qr-subtitle">使用手机扫描下方二维码即可确认使用会议室</p>
+          <div class="qr-link-copy" @click="copyQrCodeUrl" title="点击复制链接">
+            <el-icon class="copy-icon"><Link /></el-icon>
+            <span>点击复制链接</span>
+          </div>
+        </div>
+        <div class="qr-code-wrapper">
+          <div class="qr-code-border">
+            <canvas ref="qrCodeCanvas" class="qr-code-canvas"></canvas>
+          </div>
+        </div>
+        <div class="qr-code-footer">
+          <el-icon><Phone /></el-icon>
+          <span>请使用手机扫描</span>
+        </div>
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="handleCloseQrCodeDialog" style="border-radius: 8px;">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Refresh, Clock, Picture, Location, Calendar, User, Check } from '@element-plus/icons-vue'
-import { getCurrentUsage, completeReservation } from '@/api/reservation'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ElMessage } from 'element-plus'
+import { Refresh, Clock, Picture, Location, Calendar, User, Link, Phone } from '@element-plus/icons-vue'
+import { getCurrentUsage } from '@/api/reservation'
+import { useUserStore } from '@/stores/user'
+import QRCode from 'qrcode'
 import dayjs from 'dayjs'
 
 const loading = ref(false)
 const usageData = ref(null)
-const completing = ref(false)
+const qrCodeDialogVisible = ref(false)
+const qrCodeCanvas = ref(null)
+const qrCodeUrl = ref('')
+const userStore = useUserStore()
 let timer = null
 
 // 获取使用状态
@@ -289,37 +344,85 @@ const hasPhotoUrl = (photoUrl) => {
   return photoUrl && typeof photoUrl === 'string' && photoUrl.trim().length > 0
 }
 
-// 确认使用（完成预约）
-const handleCompleteReservation = async () => {
-  if (!usageData.value?.reservation?.id) {
-    ElMessage.error('预约信息不存在')
+// 显示二维码对话框
+const showQrCodeDialog = async () => {
+  try {
+    if (!usageData.value?.reservation?.id) {
+      ElMessage.error('预约信息不存在')
+      return
+    }
+
+    // 生成二维码URL（包含预约ID和token）
+    const reservationId = usageData.value.reservation.id
+    const token = userStore.token
+    if (!token) {
+      ElMessage.error('请先登录')
+      return
+    }
+    // 使用当前页面的基础URL
+    const baseUrl = window.location.origin
+    qrCodeUrl.value = `${baseUrl}/confirm-usage?id=${reservationId}&token=${encodeURIComponent(token)}`
+    
+    qrCodeDialogVisible.value = true
+    
+    // 等待DOM更新后生成二维码
+    await nextTick()
+    if (qrCodeCanvas.value) {
+      try {
+        await QRCode.toCanvas(qrCodeCanvas.value, qrCodeUrl.value, {
+          width: 300,
+          margin: 2,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          }
+        })
+      } catch (error) {
+        console.error('生成二维码失败:', error)
+        ElMessage.error('生成二维码失败')
+      }
+    }
+  } catch (error) {
+    console.error('显示二维码对话框失败:', error)
+    ElMessage.error('操作失败，请重试')
+  }
+}
+
+// 复制二维码链接
+const copyQrCodeUrl = async () => {
+  if (!qrCodeUrl.value) {
+    ElMessage.warning('链接未生成')
     return
   }
-
+  
   try {
-    await ElMessageBox.confirm(
-      '确认使用后，该预约将标记为已完成。是否确认？',
-      '确认使用',
-      {
-        confirmButtonText: '确认',
-        cancelButtonText: '取消',
-        type: 'info'
-      }
-    )
-
-    completing.value = true
-    await completeReservation(usageData.value.reservation.id)
-    ElMessage.success('确认使用成功')
-    // 重新获取使用状态
-    await fetchUsage()
+    // 使用 Clipboard API 复制链接
+    await navigator.clipboard.writeText(qrCodeUrl.value)
+    ElMessage.success('链接已复制到剪贴板')
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error('确认使用失败:', error)
-      ElMessage.error(error.response?.data?.message || '确认使用失败')
+    // 如果 Clipboard API 不可用，使用传统方法
+    try {
+      const textArea = document.createElement('textarea')
+      textArea.value = qrCodeUrl.value
+      textArea.style.position = 'fixed'
+      textArea.style.opacity = '0'
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+      ElMessage.success('链接已复制到剪贴板')
+    } catch (err) {
+      console.error('复制失败:', err)
+      ElMessage.error('复制失败，请手动复制')
     }
-  } finally {
-    completing.value = false
   }
+}
+
+// 关闭二维码对话框
+const handleCloseQrCodeDialog = () => {
+  qrCodeDialogVisible.value = false
+  // 刷新使用状态
+  fetchUsage()
 }
 
 // 更新倒计时
@@ -463,8 +566,16 @@ onUnmounted(() => {
   margin-bottom: 25px;
 }
 
+.room-name-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
 .room-name {
-  margin: 0 0 10px 0;
+  margin: 0;
   font-size: 28px;
   font-weight: 600;
   color: #303133;
@@ -472,6 +583,13 @@ onUnmounted(() => {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.confirm-status-tag {
+  font-size: 14px;
+  font-weight: 500;
+  padding: 6px 16px;
+  border-radius: 16px;
 }
 
 .room-number {
@@ -519,6 +637,7 @@ onUnmounted(() => {
   height: 50px;
   font-size: 16px;
   font-weight: 500;
+  border-radius: 16px;
 }
 
 .time-card {
@@ -643,6 +762,17 @@ onUnmounted(() => {
     font-size: 24px;
   }
   
+  .room-name-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .confirm-status-tag {
+    font-size: 12px;
+    padding: 4px 12px;
+  }
+  
   .time-value {
     font-size: 32px;
   }
@@ -651,6 +781,114 @@ onUnmounted(() => {
     height: 250px;
     margin-bottom: 20px;
   }
+}
+
+/* 二维码对话框样式 */
+.qr-code-dialog :deep(.el-dialog__header) {
+  text-align: center;
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.qr-code-dialog :deep(.el-dialog__title) {
+  font-size: 20px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.qr-code-container {
+  padding: 30px 20px;
+}
+
+.qr-code-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.qr-icon {
+  font-size: 48px;
+  color: #409eff;
+  margin-bottom: 12px;
+}
+
+.qr-link-copy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 10px 16px;
+  background: #f0f9ff;
+  border: 1px solid #b3d8ff;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  color: #409eff;
+  font-size: 14px;
+}
+
+.qr-link-copy:hover {
+  background: #e1f3ff;
+  border-color: #409eff;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.2);
+}
+
+.qr-link-copy .copy-icon {
+  font-size: 18px;
+}
+
+.qr-title {
+  margin: 0 0 8px 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.qr-subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: #909399;
+  line-height: 1.6;
+}
+
+.qr-code-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.qr-code-border {
+  padding: 20px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 2px solid #e4e7ed;
+  display: inline-block;
+}
+
+.qr-code-canvas {
+  display: block;
+  border-radius: 8px;
+  background: white;
+  padding: 8px;
+}
+
+.qr-code-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  color: #606266;
+  font-size: 14px;
+}
+
+.qr-code-footer .el-icon {
+  font-size: 18px;
+  color: #409eff;
 }
 </style>
 
