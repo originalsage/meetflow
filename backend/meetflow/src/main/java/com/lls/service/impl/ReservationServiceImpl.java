@@ -151,12 +151,12 @@ public class ReservationServiceImpl implements ReservationService {
             throw new RuntimeException("无权限取消此预约");
         }
 
-        // 检查状态
+        // 检查状态：只能取消待审批（0）或已通过（1）的预约
         if (reservation.getStatus() == 3) {
             throw new RuntimeException(ResultCode.RESERVATION_ALREADY_CANCELLED.getMessage());
         }
-        if (reservation.getStatus() == 1) {
-            // 已通过的预约可以取消
+        if (reservation.getStatus() != 0 && reservation.getStatus() != 1) {
+            throw new RuntimeException(ResultCode.RESERVATION_CANNOT_CANCEL.getMessage());
         }
 
         // 更新状态为已取消

@@ -29,7 +29,7 @@ public enum ResultCode {
     RESERVATION_NOT_FOUND(3001, "预约记录不存在"),
     RESERVATION_TIME_CONFLICT(3002, "该时间段已被预约"),
     RESERVATION_TIME_INVALID(3003, "预约时间无效"),
-    RESERVATION_ALREADY_APPROVED(3004, "预约已审批，无法取消"),
+    RESERVATION_CANNOT_CANCEL(3004, "只能取消待审批或已通过的预约"),
     RESERVATION_ALREADY_CANCELLED(3005, "预约已取消"),
     RESERVATION_STATUS_INVALID(3006, "预约状态无效"),
     RESERVATION_USER_TIME_CONFLICT(3007, "您在该时间段已有其他预约，不能同时预约多个会议室"),
